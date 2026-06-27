@@ -1,6 +1,6 @@
 const STORAGE_KEY = "poker-tactics-player-v1";
 const CARD_LIBRARY_VERSION = 4;
-const CHEAT_ROLL_CHANCE = 0.05;
+const CHEAT_ROLL_CHANCE = 0.1;
 
 const draftTierOrder = ["silver", "gold", "diamond"];
 const tierOrder = ["silver", "gold", "diamond", "cheat"];
@@ -854,11 +854,15 @@ function createOffer(advanceRound) {
 function drawOffer() {
   const offer = [];
   const usedIds = new Set(getBlockedCardIdsForCurrentRound());
+  let hasCheatCard = false;
 
   for (let index = 0; index < 3; index += 1) {
-    const card = drawOneCard(usedIds);
+    const card = drawOneCard(usedIds, {
+      excludeTiers: hasCheatCard ? ["cheat"] : [],
+    });
     if (!card) break;
     usedIds.add(card.id);
+    hasCheatCard = hasCheatCard || card.tier === "cheat";
     offer.push({ cardId: card.id, rerolled: false });
   }
 
@@ -891,12 +895,13 @@ function rerollSlot(index) {
     ...getBlockedCardIdsForCurrentRound(),
     ...state.offer.map((item, itemIndex) => (itemIndex === index ? null : item.cardId)).filter(Boolean),
   ]);
+  const excludeTiers = offerHasCheatOutsideSlot(index) ? ["cheat"] : [];
   usedIds.add(slot.cardId);
-  let card = drawOneCard(usedIds);
+  let card = drawOneCard(usedIds, { excludeTiers });
 
   if (!card) {
     usedIds.delete(slot.cardId);
-    card = drawOneCard(usedIds);
+    card = drawOneCard(usedIds, { excludeTiers });
   }
 
   if (!card) {
@@ -924,9 +929,10 @@ function drawDifferentCardForSlot(index, currentCardId) {
     ...state.offer.map((item, itemIndex) => (itemIndex === index ? null : item.cardId)).filter(Boolean),
     currentCardId,
   ]);
+  const excludeTiers = offerHasCheatOutsideSlot(index) ? ["cheat"] : [];
 
   for (let attempt = 0; attempt < 20; attempt += 1) {
-    const card = drawOneCard(baseUsedIds);
+    const card = drawOneCard(baseUsedIds, { excludeTiers });
     if (!card) return null;
     const candidateOffer = state.offer.map((slot, itemIndex) => (
       itemIndex === index ? { ...slot, cardId: card.id } : slot
@@ -938,6 +944,10 @@ function drawDifferentCardForSlot(index, currentCardId) {
   }
 
   return null;
+}
+
+function offerHasCheatOutsideSlot(slotIndex) {
+  return state.offer.some((slot, itemIndex) => itemIndex !== slotIndex && getCard(slot.cardId)?.tier === "cheat");
 }
 
 function getBlockedCardIdsForCurrentRound() {
@@ -1029,12 +1039,13 @@ function blockCardForNextRound(cardId) {
   };
 }
 
-function drawOneCard(usedIds = new Set()) {
+function drawOneCard(usedIds = new Set(), options = {}) {
   const effectiveRates = getEffectiveTierRates();
+  const excludedTiers = new Set(options.excludeTiers || []);
   let tier = pickWeighted(
     tierOrder.map((tierName) => ({
       value: tierName,
-      weight: effectiveRates[tierName],
+      weight: excludedTiers.has(tierName) ? 0 : effectiveRates[tierName],
     })),
   );
 
