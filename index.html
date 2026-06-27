@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Poker Tactics Player Draft</title>
+    <meta name="theme-color" content="#0d342e" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="stylesheet" href="styles.css" />
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js" defer></script>
+    <script src="app.js" defer></script>
+  </head>
+  <body>
+    <div class="player-shell">
+      <header class="player-topbar">
+        <div class="brand">
+          <img src="assets/poker-chip.svg" alt="" class="brand-mark" />
+          <div>
+            <span class="eyebrow">Poker Tactics</span>
+            <h1>Player Draft</h1>
+          </div>
+        </div>
+
+        <div class="top-actions">
+          <button class="ghost-button glass" type="button" data-action="toggle-host">
+            <i data-lucide="sliders-horizontal"></i>
+            <span>Quản trò</span>
+          </button>
+          <button class="icon-button glass" type="button" data-action="toggle-sound" aria-label="Âm thanh">
+            <i data-lucide="volume-2"></i>
+          </button>
+          <button class="icon-button glass danger" type="button" data-action="reset-state" aria-label="Reset">
+            <i data-lucide="rotate-ccw"></i>
+          </button>
+        </div>
+      </header>
+
+      <main>
+        <section class="name-gate panel" id="nameGate">
+          <form id="nameForm" class="name-card">
+            <div>
+              <span class="eyebrow">Người chơi</span>
+              <h2>Nhập tên</h2>
+            </div>
+            <label>
+              <span>Tên</span>
+              <input id="playerNameInput" type="text" name="playerName" autocomplete="off" placeholder="VD: Nam" />
+            </label>
+            <button class="primary-button" type="submit">
+              <i data-lucide="play"></i>
+              <span>Vào chọn thẻ</span>
+            </button>
+          </form>
+        </section>
+
+        <section class="player-app" id="playerApp" hidden>
+          <section class="player-hero">
+            <div class="hero-copy">
+              <span class="eyebrow">Xin chào</span>
+              <h2 id="playerNameDisplay">Player</h2>
+              <div class="hero-meta">
+                <span id="roundLabel">Vòng chọn 1</span>
+                <span id="statusLabel">Đang chọn</span>
+              </div>
+            </div>
+            <div class="hero-actions">
+              <button class="ghost-button" type="button" data-action="edit-name">
+                <i data-lucide="user-round-pen"></i>
+                <span>Đổi tên</span>
+              </button>
+              <button class="primary-button" type="button" data-action="new-offer">
+                <i data-lucide="sparkles"></i>
+                <span>Vòng mới</span>
+              </button>
+            </div>
+            <div class="tier-strip compact" id="tierBars"></div>
+          </section>
+
+          <section class="host-panel panel" id="hostPanel" hidden>
+            <div class="section-heading">
+              <div>
+                <span class="eyebrow">Quản trò</span>
+                <h2>Tỉ lệ vòng kế tiếp</h2>
+              </div>
+              <button class="icon-button" type="button" data-action="close-host" aria-label="Đóng quản trò">
+                <i data-lucide="x"></i>
+              </button>
+            </div>
+            <form id="hostForm" class="host-form">
+              <label>
+                <span>Bạc</span>
+                <input id="rateSilverInput" type="number" min="0" max="100" step="1" inputmode="numeric" />
+              </label>
+              <label>
+                <span>Vàng</span>
+                <input id="rateGoldInput" type="number" min="0" max="100" step="1" inputmode="numeric" />
+              </label>
+              <label>
+                <span>Kim cương</span>
+                <input id="rateDiamondInput" type="number" min="0" max="100" step="1" inputmode="numeric" />
+              </label>
+              <div class="host-submit">
+                <span id="ratesTotal">Tổng 100%</span>
+                <button class="primary-button" type="submit">
+                  <i data-lucide="save"></i>
+                  <span>Lưu cho vòng sau</span>
+                </button>
+              </div>
+            </form>
+            <div class="host-rules">
+              <span id="nextRatesLabel">Vòng sau dùng preset mặc định.</span>
+              <span id="blockedLabel">Không có thẻ bị khóa ở vòng kế tiếp.</span>
+            </div>
+          </section>
+
+          <section class="choice-section">
+            <div class="section-heading">
+              <div>
+                <span class="eyebrow">Lựa chọn</span>
+                <h2>Chọn 1 thẻ</h2>
+              </div>
+              <div class="choice-count" id="choiceCount">0/3</div>
+            </div>
+            <section class="draft-board" id="draftBoard" aria-label="Lựa chọn vòng hiện tại"></section>
+          </section>
+
+          <section class="hand-panel panel">
+            <div class="section-heading">
+              <div>
+                <span class="eyebrow">Bộ của bạn</span>
+                <h2>Thẻ đang cầm</h2>
+              </div>
+              <span class="hand-count" id="handCount">0 thẻ</span>
+            </div>
+            <div id="handGrid" class="hand-grid"></div>
+          </section>
+        </section>
+      </main>
+    </div>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  </body>
+</html>

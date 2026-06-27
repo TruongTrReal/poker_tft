@@ -1,0 +1,16 @@
+{
+  "name": "Poker Tactics Player Draft",
+  "short_name": "Poker Draft",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#0d342e",
+  "theme_color": "#0d342e",
+  "icons": [
+    {
+      "src": "assets/poker-chip.svg",
+      "sizes": "128x128",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
