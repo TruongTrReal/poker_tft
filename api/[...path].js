@@ -1,8 +1,8 @@
 const TIER_ORDER = ["silver", "gold", "diamond"];
 const TIER_RATES = {
-  silver: { silver: 100, gold: 0, diamond: 0 },
-  gold: { silver: 0, gold: 100, diamond: 0 },
-  diamond: { silver: 0, gold: 0, diamond: 100 },
+  silver: { silver: 100, gold: 0, diamond: 0, cheat: 0 },
+  gold: { silver: 0, gold: 100, diamond: 0, cheat: 0 },
+  diamond: { silver: 0, gold: 0, diamond: 100, cheat: 0 },
 };
 const DEFAULT_TIERS = ["silver", "silver", "gold", "gold", "diamond"];
 const HOST_TOKEN = process.env.HOST_TOKEN || "3EqLZZi9Jnc";

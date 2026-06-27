@@ -11,9 +11,9 @@ HOST_TOKEN = os.environ.get("HOST_TOKEN") or secrets.token_urlsafe(8)
 
 TIER_ORDER = ("silver", "gold", "diamond")
 TIER_RATES = {
-    "silver": {"silver": 100, "gold": 0, "diamond": 0},
-    "gold": {"silver": 0, "gold": 100, "diamond": 0},
-    "diamond": {"silver": 0, "gold": 0, "diamond": 100},
+    "silver": {"silver": 100, "gold": 0, "diamond": 0, "cheat": 0},
+    "gold": {"silver": 0, "gold": 100, "diamond": 0, "cheat": 0},
+    "diamond": {"silver": 0, "gold": 0, "diamond": 100, "cheat": 0},
 }
 DEFAULT_TIERS = ("silver", "silver", "gold", "gold", "diamond")
 

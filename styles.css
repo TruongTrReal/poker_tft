@@ -17,6 +17,9 @@
   --gold-deep: #7c5518;
   --diamond: #59bfd2;
   --diamond-deep: #166071;
+  --cheat: #ff405f;
+  --cheat-deep: #65030d;
+  --cheat-hot: #ffb347;
   --shadow: 0 18px 46px rgba(4, 16, 15, 0.34);
 }
 
@@ -304,7 +307,7 @@ button svg,
 
 .tier-strip {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
   min-width: min(100%, 380px);
 }
@@ -381,6 +384,10 @@ button svg,
 
 .diamond-bg {
   background: linear-gradient(90deg, var(--diamond-deep), var(--diamond));
+}
+
+.cheat-bg {
+  background: linear-gradient(90deg, var(--cheat-deep), var(--cheat), var(--cheat-hot));
 }
 
 .choice-section {
@@ -512,6 +519,51 @@ button svg,
   background:
     radial-gradient(circle at 18% 16%, rgba(235, 255, 255, 0.34), transparent 28%),
     linear-gradient(145deg, #0a4456, #16809c 54%, #76d6df);
+}
+
+.draft-card.cheat,
+.hand-card.cheat {
+  isolation: isolate;
+  border: 1px solid rgba(255, 218, 156, 0.42);
+  background:
+    radial-gradient(circle at 18% 14%, rgba(255, 208, 124, 0.38), transparent 25%),
+    radial-gradient(circle at 82% 12%, rgba(255, 64, 95, 0.42), transparent 27%),
+    linear-gradient(145deg, #210207 0%, #65030d 44%, #d91332 74%, #ff9f43 100%);
+  box-shadow:
+    0 16px 38px rgba(0, 0, 0, 0.28),
+    0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 0 34px rgba(255, 64, 95, 0.34);
+}
+
+.draft-card.cheat::before,
+.hand-card.cheat::before {
+  content: "";
+  position: absolute;
+  inset: -55%;
+  z-index: 0;
+  background:
+    conic-gradient(from 90deg, transparent 0 24%, rgba(255, 255, 255, 0.3) 28%, transparent 32% 62%, rgba(255, 179, 71, 0.3) 66%, transparent 72% 100%);
+  opacity: 0.28;
+  animation: cheatSweep 5.5s linear infinite;
+  pointer-events: none;
+}
+
+.draft-card.cheat .tier-badge,
+.hand-card.cheat .tier-badge {
+  background: rgba(255, 250, 240, 0.94);
+  color: #7c0712;
+  box-shadow: 0 0 18px rgba(255, 179, 71, 0.34);
+}
+
+.draft-card.cheat h3,
+.hand-card.cheat h3 {
+  text-shadow: 0 0 18px rgba(255, 179, 71, 0.36);
+}
+
+@keyframes cheatSweep {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .draft-card::after,

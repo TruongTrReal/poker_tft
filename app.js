@@ -1,7 +1,9 @@
 const STORAGE_KEY = "poker-tactics-player-v1";
-const CARD_LIBRARY_VERSION = 3;
+const CARD_LIBRARY_VERSION = 4;
+const CHEAT_ROLL_CHANCE = 0.1;
 
-const tierOrder = ["silver", "gold", "diamond"];
+const draftTierOrder = ["silver", "gold", "diamond"];
+const tierOrder = ["silver", "gold", "diamond", "cheat"];
 
 const tierInfo = {
   silver: {
@@ -25,18 +27,25 @@ const tierInfo = {
     suit: "♦",
     dot: "#59bfd2",
   },
+  cheat: {
+    label: "Gian lận",
+    className: "cheat",
+    bgClass: "cheat-bg",
+    suit: "★",
+    dot: "#ff405f",
+  },
 };
 
 const tierRates = {
-  silver: { silver: 100, gold: 0, diamond: 0 },
-  gold: { silver: 0, gold: 100, diamond: 0 },
-  diamond: { silver: 0, gold: 0, diamond: 100 },
+  silver: { silver: 100, gold: 0, diamond: 0, cheat: 0 },
+  gold: { silver: 0, gold: 100, diamond: 0, cheat: 0 },
+  diamond: { silver: 0, gold: 0, diamond: 100, cheat: 0 },
 };
 
 const defaultRoundTiers = ["silver", "silver", "gold", "gold", "diamond"];
 
 function upgrade(id, tier, name, tag, text, copiesOrOptions) {
-  const defaultCopies = tier === "diamond" ? 2 : tier === "gold" ? 4 : 6;
+  const defaultCopies = tier === "cheat" ? 1 : tier === "diamond" ? 2 : tier === "gold" ? 4 : 6;
   const options = typeof copiesOrOptions === "object" ? copiesOrOptions : {};
   const copies = typeof copiesOrOptions === "number" ? copiesOrOptions : options.copies;
   return {
@@ -62,12 +71,9 @@ const defaultCards = [
   upgrade("silver-back-door", "silver", "Cửa Sau", "Bet", "Một lần mỗi vòng, sau khi fold được giữ lại 1đ từ số đã bet."),
   upgrade("silver-fold-value", "silver", "Fold Có Lãi", "Bet", "Nếu fold trước showdown, nhận +1đ."),
   upgrade("silver-bad-hand-insurance", "silver", "Bảo Hiểm Bài Xấu", "Bài", "Nếu bài cuối thuộc nhóm yếu nhất bàn, nhận +2đ."),
-  upgrade("silver-range-note", "silver", "Ghi Chú Range", "Thông tin", "Theo dõi range một đối thủ trong vòng hiện tại."),
-  upgrade("silver-table-tempo", "silver", "Tempo Bàn", "Thông tin", "Sau mỗi vòng, ghi lại người chơi chủ động nhất; nếu thắng họ, nhận +1đ."),
   upgrade("silver-bottom-floor", "silver", "Dưới Đáy Vực", "Comeback", "Từ vòng 2: nếu đang ít tiền nhất bàn, nhận thêm +3đ.", { minRound: 2 }),
   upgrade("silver-chaser", "silver", "Kẻ Bám Đuổi", "Comeback", "Từ vòng 2: nếu thua vòng này và không top 1 tiền, nhận +2đ.", { minRound: 2 }),
   upgrade("silver-last-chip", "silver", "Một Đồng Cũng Chơi", "Comeback", "Từ vòng 2: khi còn dưới 5đ, lần all-in tiếp theo cộng +2đ vào pot giả lập.", { minRound: 2 }),
-  upgrade("silver-table-talk", "silver", "Mồm Mép", "Chaos", "Mỗi vòng 1 lần, bluff khiến ít nhất 1 người fold thì nhận +1đ."),
   upgrade("silver-temporary-friend", "silver", "Bạn Thân Tạm Thời", "Chaos", "Chọn 1 người; nếu cả hai cùng sống hết vòng, cả hai nhận +1đ."),
   upgrade("silver-lucky-roll", "silver", "Cầu May", "Chaos", "Tung xúc xắc: 1-2 mất 1đ, 3-4 nhận 1đ, 5-6 nhận 3đ."),
   upgrade("silver-light-ante", "silver", "Phí Bàn Nhẹ", "Tiến độ", "Giảm phí vào bàn của bạn 1đ ở vòng này, tối thiểu 0đ."),
@@ -86,80 +92,95 @@ const defaultCards = [
   upgrade("gold-all-in-insurance", "gold", "All-in Có Bảo Hiểm", "Bet", "Nếu all-in và thua, được hoàn lại 2đ."),
   upgrade("gold-pot-builder", "gold", "Dựng Pot", "Bet", "Nếu pot đạt ít nhất 12đ và bạn thắng, nhận thêm +2đ."),
   upgrade("gold-value-line", "gold", "Value Line", "Bet", "Khi thắng showdown bằng hand mạnh, nhận thêm +2đ từ pot."),
-  upgrade("gold-change-luck", "gold", "Đổi Vận", "Bài", "Mỗi vòng 1 lần, được đổi 1 lá bài của mình."),
-  upgrade("gold-peek", "gold", "Nhìn Trộm", "Thông tin", "Mỗi vòng 1 lần, được xem 1 lá bài úp hoặc 1 thông tin bí mật."),
-  upgrade("gold-instinct", "gold", "Linh Cảm", "Thông tin", "Trước showdown, được hỏi bài mình có mạnh hơn ít nhất 1 người không."),
-  upgrade("gold-keep-card", "gold", "Giữ Bài", "Bài", "Sau khi chia bài, được giữ lại 1 lá và bốc lại phần còn lại."),
+  upgrade("gold-change-luck", "gold", "Đổi Vận", "Bài", "Đến hết trận, mỗi vòng 1 lần, được đổi 1 lá bài của mình."),
+  upgrade("gold-peek", "gold", "Nhìn Trộm", "Thông tin", "Đến hết trận, mỗi vòng 1 lần, được xem 1 lá bài úp hoặc 1 thông tin bí mật."),
+  upgrade("gold-instinct", "gold", "Linh Cảm", "Thông tin", "Đến hết trận, trước showdown mỗi vòng, được hỏi bài mình có mạnh hơn ít nhất 1 người không."),
+  upgrade("gold-keep-card", "gold", "Giữ Bài", "Bài", "Đến hết trận, sau khi chia bài mỗi vòng, được giữ lại 1 lá và bốc lại phần còn lại."),
   upgrade("gold-hunt-top-one", "gold", "Săn Top 1", "Top 1", "Từ vòng 2: nếu thắng pot trước người đang top 1, nhận thêm +3đ.", { minRound: 2 }),
   upgrade("gold-rich-tax", "gold", "Thuế Nhà Giàu", "Top 1", "Từ vòng 2: người nhiều tiền nhất mất 2đ, bạn nhận 1đ.", { minRound: 2 }),
   upgrade("gold-interest-thief", "gold", "Kẻ Cướp Lãi", "Top 1", "Từ vòng 2: mỗi vòng chọn 1 người; họ mất 1đ lợi tức, bạn nhận 1đ.", { minRound: 2 }),
   upgrade("gold-wanted", "gold", "Truy Nã", "Top 1", "Từ vòng 2: đặt bounty lên người nhiều tiền nhất; ai thắng pot có họ tham gia nhận +3đ.", { minRound: 2 }),
   upgrade("gold-comeback-pot", "gold", "Lội Ngược Dòng", "Comeback", "Từ vòng 2: nếu thắng pot khi đang ít tiền nhất bàn, nhận thêm +4đ.", { minRound: 2 }),
-  upgrade("gold-last-chance", "gold", "Cơ Hội Cuối", "Comeback", "Từ vòng 2: lần đầu về 0đ, sống lại với 5đ. Chỉ dùng 1 lần.", { minRound: 2 }),
+  upgrade("gold-last-chance", "gold", "Cơ Hội Cuối", "Comeback", "Từ vòng 2 đến hết trận: nếu về 0đ, sống lại với 4đ và mất 1 dấu. Bắt đầu với 2 dấu.", { minRound: 2 }),
   upgrade("gold-leader-pressure", "gold", "Áp Lực Dẫn Đầu", "Top 1", "Từ vòng 2: người nhiều tiền nhất phải bet tối thiểu 2đ nếu muốn tham gia vòng.", { minRound: 2 }),
-  upgrade("gold-reversal", "gold", "Đảo Chiều", "Chaos", "Một lần mỗi trận, người thắng pot nhận ít hơn 2đ; phần đó chia cho người thua nhiều nhất."),
+  upgrade("gold-reversal", "gold", "Đảo Chiều", "Chaos", "Đến hết trận, mỗi vòng lần đầu bạn thua pot, người thắng nhận ít hơn 2đ; phần đó trả lại cho người thua nhiều nhất."),
   upgrade("gold-rage-counter", "gold", "Bộ Đếm Nộ", "Comeback", "Từ vòng 2: thua showdown tích 1 điểm; khi thắng nhận +2đ mỗi điểm rồi xóa.", { minRound: 2 }),
-  upgrade("gold-death-duel", "gold", "Duel Đến Chết", "Tiến độ", "Một lần mỗi trận, tuyên bố pot tối thiểu 10đ cho vòng hiện tại."),
-  upgrade("gold-interest-bank", "gold", "Sổ Lãi Trần", "Economy", "Nếu lợi tức của bạn chạm trần 5đ, nhận thêm +2đ một lần trong vòng đó."),
-  upgrade("gold-early-dividend", "gold", "Cổ Tức Sớm", "Economy", "Sau khi chọn lõi này, nhận +1đ ngay và +1đ cuối 2 vòng kế tiếp nếu còn sống."),
+  upgrade("gold-death-duel", "gold", "Duel Đến Chết", "Tiến độ", "Đến hết trận, đầu mỗi vòng bạn có thể tuyên bố pot tối thiểu 10đ; nếu thắng pot đó, nhận thêm +2đ."),
+  upgrade("gold-interest-bank", "gold", "Sổ Lãi Trần", "Economy", "Đến hết trận, nếu lợi tức của bạn chạm trần 5đ, nhận thêm +2đ một lần trong vòng đó."),
+  upgrade("gold-early-dividend", "gold", "Cổ Tức Sớm", "Economy", "Đến hết trận, nhận +1đ cuối mỗi vòng nếu bạn vẫn còn ít nhất 8đ sau khi trả bet."),
   upgrade("gold-ante-farmer", "gold", "Nông Dân Ante", "Economy", "Mỗi khi bạn thắng pot nhỏ hơn 8đ, nhận thêm +2đ."),
-  upgrade("gold-save-or-surge", "gold", "Giữ Hay Bung", "Economy", "Đầu vòng chọn: không raise vòng này để nhận +3đ cuối vòng, hoặc mọi raise đầu của bạn +1đ áp lực."),
+  upgrade("gold-save-or-surge", "gold", "Giữ Hay Bung", "Economy", "Đến hết trận, đầu mỗi vòng chọn: không raise để nhận +3đ cuối vòng, hoặc raise đầu của bạn tạo +1đ áp lực."),
   upgrade("gold-late-fee", "gold", "Phí Vào Muộn", "Bet", "Người cuối cùng call raise của bạn phải trả thêm 1đ vào pot."),
   upgrade("gold-double-barrel", "gold", "Hai Nòng", "Bet", "Nếu bạn raise ở 2 lượt bet liên tiếp trong cùng vòng, nhận +3đ nếu thắng pot."),
-  upgrade("gold-pot-skimmer", "gold", "Vớt Mép Pot", "Bet", "Nếu bạn fold sau khi đã bỏ ít nhất 3đ vào pot, hoàn lại 2đ. Mỗi vòng 1 lần."),
-  upgrade("gold-side-quest", "gold", "Kèo Phụ", "Bet", "Đầu vòng chọn 1 đối thủ; nếu bạn thắng pot có họ tham gia, nhận +3đ."),
+  upgrade("gold-pot-skimmer", "gold", "Vớt Mép Pot", "Bet", "Đến hết trận, mỗi vòng 1 lần, nếu fold sau khi đã bỏ ít nhất 3đ vào pot, hoàn lại 2đ."),
+  upgrade("gold-side-quest", "gold", "Kèo Phụ", "Bet", "Đến hết trận, đầu mỗi vòng chọn 1 đối thủ; nếu bạn thắng pot có họ tham gia, nhận +3đ."),
   upgrade("gold-clean-fold", "gold", "Fold Sạch", "Kỷ luật", "Nếu bạn fold trước khi bỏ quá 1đ vào pot, nhận 1 dấu. Đủ 3 dấu đổi lấy +5đ."),
-  upgrade("gold-scouting-report", "gold", "Báo Cáo Trinh Sát", "Thông tin", "Mỗi vòng trước bet đầu, hỏi 1 người xem họ có muốn chơi hand này không; họ chỉ trả lời Có/Không."),
-  upgrade("gold-suit-contract", "gold", "Hợp Đồng Chất", "Bài", "Trước khi xem bài, chọn 1 chất. Nếu showdown hand thắng có chất đó, nhận +4đ."),
-  upgrade("gold-card-market", "gold", "Chợ Bài", "Bài", "Mỗi vòng 1 lần, trả 1đ để đổi 1 lá. Nếu vẫn thua showdown, hoàn lại 1đ."),
-  upgrade("gold-quiet-table", "gold", "Bàn Yên", "Chaos", "Một lần mỗi vòng, cấm table talk chiến thuật trong 1 lượt bet; ai vi phạm nộp 1đ vào pot."),
+  upgrade("gold-suit-contract", "gold", "Hợp Đồng Chất", "Bài", "Đến hết trận, trước khi xem bài mỗi vòng, chọn 1 chất. Nếu showdown hand thắng có chất đó, nhận +4đ."),
+  upgrade("gold-card-market", "gold", "Chợ Bài", "Bài", "Đến hết trận, mỗi vòng 1 lần, trả 1đ để đổi 1 lá. Nếu vẫn thua showdown, hoàn lại 1đ."),
   upgrade("gold-shared-bounty", "gold", "Bounty Chia Đôi", "Top 1", "Từ vòng 2: đặt bounty 4đ lên top 1; nếu người khác ăn bounty, bạn cũng nhận 2đ.", { minRound: 2 }),
-  upgrade("gold-short-stack-sponsor", "gold", "Nhà Tài Trợ Short Stack", "Comeback", "Từ vòng 2: nếu bạn bắt đầu vòng với 5đ hoặc ít hơn, nhận +2đ và 1 lần call giảm 1đ.", { minRound: 2 }),
-  upgrade("gold-vendetta", "gold", "Ân Oán", "Comeback", "Từ vòng 2: chọn người vừa thắng bạn gần nhất; nếu thắng pot trước họ, nhận +5đ rồi xóa mục tiêu.", { minRound: 2 }),
+  upgrade("gold-short-stack-sponsor", "gold", "Nhà Tài Trợ Short Stack", "Comeback", "Từ vòng 2 đến hết trận: nếu bắt đầu vòng với 5đ hoặc ít hơn, nhận +2đ và call đầu giảm 1đ.", { minRound: 2 }),
+  upgrade("gold-vendetta", "gold", "Ân Oán", "Comeback", "Từ vòng 2 đến hết trận: mục tiêu luôn là người vừa thắng bạn gần nhất; nếu thắng pot trước họ, nhận +4đ.", { minRound: 2 }),
 
   upgrade("diamond-banker", "diamond", "Chủ Ngân Hàng", "Economy", "Cuối mỗi vòng, nhận +1đ cho mỗi 2 người chơi còn sống, tối đa +5đ."),
-  upgrade("diamond-venture", "diamond", "Đầu Tư Mạo Hiểm", "Economy", "Đầu vòng hy sinh 3đ; nếu thắng pot vòng đó, nhận lại 9đ."),
-  upgrade("diamond-lock-pot", "diamond", "Khóa Pot", "Bet", "Một lần mỗi vòng, khi pot đạt 15đ, không ai được raise thêm."),
-  upgrade("diamond-finisher", "diamond", "Đòn Kết Liễu", "Bet", "Nếu thắng một người khiến họ về 0đ, nhận thêm +8đ."),
-  upgrade("diamond-fate-redraw", "diamond", "Bốc Lại Định Mệnh", "Bài", "Một lần mỗi trận, sau khi thấy bài mình, bỏ hand hiện tại và nhận hand mới."),
-  upgrade("diamond-third-hidden-card", "diamond", "Bài Ẩn Thứ Ba", "Bài", "Mỗi vòng bốc thêm 1 lá úp riêng; showdown chọn 2 trong 3 lá."),
-  upgrade("diamond-luck-blocker", "diamond", "Chặn Vận May", "Bài", "Một lần mỗi vòng, hủy hiệu ứng đổi bài, bốc lại hoặc xem bài của người khác."),
+  upgrade("diamond-venture", "diamond", "Đầu Tư Mạo Hiểm", "Economy", "Đến hết trận, đầu mỗi vòng có thể hy sinh 3đ; nếu thắng pot vòng đó, nhận lại 9đ."),
+  upgrade("diamond-lock-pot", "diamond", "Khóa Pot", "Bet", "Đến hết trận, mỗi vòng 1 lần, khi pot đạt 15đ, bạn có thể khóa để không ai được raise thêm."),
+  upgrade("diamond-fate-redraw", "diamond", "Bốc Lại Định Mệnh", "Bài", "Đến hết trận, mỗi vòng 1 lần sau khi thấy bài mình, có thể bỏ hand hiện tại và nhận hand mới."),
+  upgrade("diamond-third-hidden-card", "diamond", "Bài Ẩn Thứ Ba", "Bài", "Đến hết trận, mỗi vòng bốc thêm 1 lá úp riêng; showdown chọn 2 trong 3 lá."),
+  upgrade("diamond-luck-blocker", "diamond", "Chặn Vận May", "Bài", "Đến hết trận, mỗi vòng 1 lần, hủy hiệu ứng đổi bài, bốc lại hoặc xem bài của người khác."),
   upgrade("diamond-rage-scaling", "diamond", "Càng Thua Càng Mạnh", "Comeback", "Từ vòng 2: mỗi lần thua showdown tích 1 điểm; khi thắng nhận +3đ mỗi điểm rồi xóa.", { minRound: 2 }),
   upgrade("diamond-survival-cover", "diamond", "Bảo Hiểm Sinh Tồn", "Comeback", "Từ vòng 2: nếu còn dưới 6đ, bạn không thể mất quá 4đ trong một vòng.", { minRound: 2 }),
   upgrade("diamond-rich-assassin", "diamond", "Sát Thủ Nhà Giàu", "Top 1", "Từ vòng 2: nếu thắng pot có người nhiều tiền nhất tham gia, lấy thêm 5đ trực tiếp từ họ.", { minRound: 2 }),
   upgrade("diamond-steal-interest", "diamond", "Cướp Lợi Tức", "Top 1", "Từ vòng 2: mỗi vòng chọn 1 người; nhận toàn bộ lợi tức của họ, tối đa +5đ.", { minRound: 2 }),
-  upgrade("diamond-fate-coin", "diamond", "Đồng Xu Định Mệnh", "Chaos", "Mỗi vòng 1 lần, khi thua showdown tung xu; ngửa hoàn lại 50% số đã bet."),
-  upgrade("diamond-revive", "diamond", "Hồi Sinh Kim Cương", "Comeback", "Từ vòng 2: lần đầu về 0đ, hồi sinh với 8đ và nhận ngay 1 lựa chọn lõi mới không có Kim cương.", { minRound: 2 }),
+  upgrade("diamond-fate-coin", "diamond", "Đồng Xu Định Mệnh", "Chaos", "Đến hết trận, mỗi vòng 1 lần, khi thua showdown tung xu; ngửa hoàn lại 50% số đã bet."),
+  upgrade("diamond-revive", "diamond", "Hồi Sinh Kim Cương", "Comeback", "Từ vòng 2 đến hết trận: nếu về 0đ, hồi sinh với 6đ. Sau mỗi lần hồi sinh, lần sau hồi ít hơn 2đ.", { minRound: 2 }),
   upgrade("diamond-danger-compound", "diamond", "Lãi Kép Nguy Hiểm", "Economy", "Lợi tức x2, vẫn giới hạn tối đa 5đ; nếu thua showdown thì mất thêm 3đ."),
   upgrade("diamond-giant-pot", "diamond", "Pot Khổng Lồ", "Bet", "Nếu pot đạt ít nhất 15đ, bạn nhận thêm +5đ nếu thắng pot."),
   upgrade("diamond-royal-bounty", "diamond", "Bounty Hoàng Gia", "Top 1", "Từ vòng 2: top 1 bị đặt bounty 8đ; ai thắng pot có họ tham gia nhận bounty.", { minRound: 2 }),
-  upgrade("diamond-jungle-rule", "diamond", "Luật Rừng", "Chaos", "Mỗi vòng 1 lần, chọn luật phụ: không raise, không fold sau call, hoặc pot tối thiểu 10đ."),
-  upgrade("diamond-death-hand", "diamond", "Ván Bài Tử Thần", "Tiến độ", "Một lần mỗi trận, người thắng pot nhận +10đ, người thua nhiều nhất mất thêm 5đ."),
-  upgrade("diamond-royal-treasury", "diamond", "Kho Bạc Hoàng Gia", "Economy", "Mỗi khi bạn nhận đủ 5đ lợi tức, đặt 1 dấu kho bạc. Đủ 3 dấu nhận +10đ."),
-  upgrade("diamond-interest-engine", "diamond", "Động Cơ Lợi Tức", "Economy", "Sau khi nhận lợi tức, nếu bạn không thắng pot vòng đó, nhận thêm +2đ."),
-  upgrade("diamond-black-card", "diamond", "Thẻ Đen", "Economy", "Mỗi vòng 1 lần, mua 1 quyền: trả 2đ để đổi bài, xem thông tin, hoặc giảm 2đ bet tiếp theo."),
+  upgrade("diamond-jungle-rule", "diamond", "Luật Rừng", "Chaos", "Đến hết trận, mỗi vòng 1 lần, chọn luật phụ: không raise, không fold sau call, hoặc pot tối thiểu 10đ."),
+  upgrade("diamond-interest-engine", "diamond", "Động Cơ Lợi Tức", "Economy", "Đến hết trận, sau khi nhận lợi tức, nếu bạn không thắng pot vòng đó, nhận thêm +2đ."),
+  upgrade("diamond-black-card", "diamond", "Thẻ Đen", "Economy", "Đến hết trận, mỗi vòng 1 lần, mua 1 quyền: trả 2đ để đổi bài, xem thông tin, hoặc giảm 2đ bet tiếp theo."),
   upgrade("diamond-pot-alchemy", "diamond", "Giả Kim Pot", "Economy", "Khi pot đạt ít nhất 12đ, bạn có thể khóa +4đ thưởng cho người thắng pot nếu người đó là bạn."),
-  upgrade("diamond-grand-auction", "diamond", "Đấu Giá Lõi", "Economy", "Sau mỗi vòng chọn thẻ, bạn có thể trả 3đ để bốc thêm 1 lựa chọn Bạc/Vàng phụ và lấy nếu muốn."),
   upgrade("diamond-final-table", "diamond", "Bàn Chung Kết", "Bet", "Mỗi vòng, lần đầu bạn raise sau khi đã có ít nhất 3 người vào pot sẽ ép mỗi người theo thêm 1đ."),
   upgrade("diamond-blood-price", "diamond", "Giá Máu", "Bet", "Nếu bạn thắng pot mà đã all-in, nhận thêm +6đ; nếu thua, người thắng nhận thêm +2đ từ ngân hàng."),
   upgrade("diamond-iron-bankroll", "diamond", "Bankroll Thép", "Bet", "Mỗi vòng 1 lần, nếu một bet khiến bạn còn dưới 3đ, giảm bet đó 3đ."),
-  upgrade("diamond-no-limit-crown", "diamond", "Vương Miện No Limit", "Bet", "Một lần mỗi trận, tuyên bố No Limit: vòng này mọi raise tối thiểu +2đ và người thắng pot nhận +8đ."),
   upgrade("diamond-pot-vortex", "diamond", "Lốc Xoáy Pot", "Bet", "Nếu có ít nhất 4 người góp pot, người thắng nhận thêm +1đ cho mỗi người đã fold trước showdown."),
   upgrade("diamond-oracle", "diamond", "Tiên Tri", "Thông tin", "Mỗi vòng trước bet đầu, hỏi quản trò 1 câu Có/Không về sức mạnh tương đối của hand bạn."),
-  upgrade("diamond-public-enemy", "diamond", "Kẻ Thù Công Khai", "Thông tin", "Sau khi xem bài, chọn 1 người. Họ phải công bố họ mạnh, trung bình hay yếu theo cảm nhận."),
-  upgrade("diamond-time-walk", "diamond", "Đi Ngược Thời Gian", "Bài", "Một lần mỗi trận, sau khi một lá/hand bị đổi, hủy lần đổi đó và quay về bài trước đó."),
-  upgrade("diamond-perfect-mulligan", "diamond", "Mulligan Hoàn Hảo", "Bài", "Mỗi vòng 1 lần, bỏ toàn bộ bài riêng và nhận bài mới; nếu sau đó thắng, không nhận lợi tức vòng này."),
-  upgrade("diamond-split-destiny", "diamond", "Chia Đôi Định Mệnh", "Bài", "Trước showdown, chọn giữ hand hiện tại hoặc bốc hand mới. Nếu bốc mới, phải theo kết quả mới."),
-  upgrade("diamond-mirror-match", "diamond", "Gương Đấu", "Chaos", "Một lần mỗi vòng, sao chép hiệu ứng lõi vừa được người khác kích hoạt nếu hợp lệ với bạn."),
-  upgrade("diamond-chaos-market", "diamond", "Chợ Hỗn Loạn", "Chaos", "Đầu vòng, mỗi người có thể trả 1đ vào chợ. Người thắng pot lấy toàn bộ chợ."),
-  upgrade("diamond-kingmaker", "diamond", "Người Dựng Vua", "Chaos", "Mỗi vòng chọn 1 người không phải bạn. Nếu họ thắng pot, bạn nhận +4đ; nếu họ thua showdown, bạn mất 2đ."),
-  upgrade("diamond-table-lawyer", "diamond", "Luật Sư Bàn Chơi", "Chaos", "Một lần mỗi vòng, phủ quyết 1 luật phụ hoặc 1 hiệu ứng ép bet nhắm vào bạn."),
-  upgrade("diamond-alliance-breaker", "diamond", "Kẻ Phá Liên Minh", "Chaos", "Nếu hai người chơi cùng hợp tác/nhắm mục tiêu bạn trong vòng, chọn một người mất 2đ."),
+  upgrade("diamond-perfect-mulligan", "diamond", "Mulligan Hoàn Hảo", "Bài", "Đến hết trận, mỗi vòng 1 lần, bỏ toàn bộ bài riêng và nhận bài mới; nếu sau đó thắng, không nhận lợi tức vòng đó."),
+  upgrade("diamond-split-destiny", "diamond", "Chia Đôi Định Mệnh", "Bài", "Đến hết trận, trước showdown mỗi vòng, chọn giữ hand hiện tại hoặc bốc hand mới. Nếu bốc mới, phải theo kết quả mới."),
+  upgrade("diamond-chaos-market", "diamond", "Chợ Hỗn Loạn", "Chaos", "Đến hết trận, đầu mỗi vòng, mỗi người có thể trả 1đ vào chợ. Người thắng pot lấy toàn bộ chợ."),
+  upgrade("diamond-kingmaker", "diamond", "Người Dựng Vua", "Chaos", "Đến hết trận, mỗi vòng chọn 1 người không phải bạn. Nếu họ thắng pot, bạn nhận +4đ; nếu họ thua showdown, bạn mất 2đ."),
+  upgrade("diamond-table-lawyer", "diamond", "Luật Sư Bàn Chơi", "Chaos", "Đến hết trận, mỗi vòng 1 lần, phủ quyết 1 luật phụ hoặc 1 hiệu ứng ép bet nhắm vào bạn."),
   upgrade("diamond-underdog-contract", "diamond", "Khế Ước Kèo Dưới", "Comeback", "Từ vòng 2: nếu bạn bắt đầu vòng ở nửa dưới tiền, thắng pot nhận thêm +6đ.", { minRound: 2 }),
-  upgrade("diamond-phoenix-debt", "diamond", "Nợ Phượng Hoàng", "Comeback", "Từ vòng 2: lần đầu về 0đ, hồi sinh với 10đ nhưng 3 vòng kế tiếp lợi tức của bạn giảm 1đ.", { minRound: 2 }),
   upgrade("diamond-crown-tax", "diamond", "Thuế Vương Miện", "Top 1", "Từ vòng 2: mỗi khi top 1 thắng pot, họ nộp 2đ vào bounty chung. Người hạ họ lấy bounty.", { minRound: 2 }),
   upgrade("diamond-throne-breaker", "diamond", "Phá Ngai", "Top 1", "Từ vòng 2: nếu bạn tự tay khiến top 1 mất ít nhất 5đ trong vòng, nhận +7đ.", { minRound: 2 }),
-  upgrade("diamond-endgame-sponsor", "diamond", "Nhà Tài Trợ Endgame", "Tiến độ", "Khi còn 3 người hoặc ít hơn, đầu mỗi vòng nhận +3đ và 1 lần đổi bài miễn phí.", { minRound: 3 }),
+  upgrade("diamond-endgame-sponsor", "diamond", "Nhà Tài Trợ Endgame", "Tiến độ", "Từ vòng 3 đến hết trận, khi còn 3 người hoặc ít hơn, đầu mỗi vòng nhận +3đ và 1 lần đổi bài miễn phí.", { minRound: 3 }),
+
+  upgrade("cheat-death-hand", "cheat", "Ván Bài Tử Thần", "Siêu lỗi", "Đến hết trận, mỗi khi bạn thắng pot từ 15đ trở lên, nhận thêm +6đ và người thua nhiều nhất mất thêm 3đ."),
+  upgrade("cheat-no-limit-crown", "cheat", "Vương Miện No Limit", "Snowball", "Đến hết trận, mọi raise đầu tiên của bạn mỗi vòng có tối thiểu +2đ; nếu thắng pot sau raise đó, nhận thêm +4đ."),
+  upgrade("cheat-royal-treasury", "cheat", "Kho Bạc Gian Lận", "Economy", "Đến hết trận, mỗi khi lợi tức của bạn chạm trần 5đ, đặt 1 dấu kho bạc. Đủ 2 dấu nhận +10đ."),
+  upgrade("cheat-grand-auction", "cheat", "Đấu Giá Chợ Đen", "Draft", "Đến hết trận, mỗi vòng chọn lõi bạn được bốc thêm 1 lựa chọn phụ cùng tier; nếu lấy lựa chọn phụ, trả 2đ."),
+  upgrade("cheat-time-walk", "cheat", "Đi Ngược Thời Gian", "Bài", "Đến hết trận, mỗi vòng 1 lần, sau khi đổi bài bất lợi cho bạn, được hủy lần đổi đó và giữ bài trước đó."),
+  upgrade("cheat-mirror-match", "cheat", "Gương Đỏ", "Copy", "Đến hết trận, mỗi vòng 1 lần, sao chép hiệu ứng lõi vừa được người khác kích hoạt nếu hợp lệ với bạn."),
+  upgrade("cheat-finisher", "cheat", "Đòn Kết Liễu Đỏ", "Snowball", "Nếu thắng một người khiến họ về 0đ, nhận thêm +8đ và +2đ lợi tức ở vòng kế tiếp."),
+  upgrade("cheat-phoenix-debt", "cheat", "Nợ Phượng Hoàng Đỏ", "Comeback", "Từ vòng 2: lần đầu về 0đ, hồi sinh với 10đ và được giảm 2đ cho bet đầu vòng sau.", { minRound: 2 }),
+  upgrade("cheat-house-edge", "cheat", "Nhà Cái Đứng Sau", "Snowball", "Đến hết trận, mỗi khi bạn thắng pot, nhận thêm +2đ từ ngân hàng."),
+  upgrade("cheat-rigged-deck", "cheat", "Bộ Bài Đã Xếp", "Bài", "Đến hết trận, mỗi vòng 1 lần sau khi xem bài, được bốc lại toàn bộ hand; nếu hand mới thắng, nhận thêm +3đ."),
+  upgrade("cheat-insider-trading", "cheat", "Giao Dịch Nội Gián", "Thông tin", "Đến hết trận, mỗi vòng 1 lần trước showdown, xem bài của 1 người rồi được quyền fold và hoàn lại 50% số đã bet."),
+  upgrade("cheat-blood-all-in", "cheat", "All-in Máu Lạnh", "Bet", "Đến hết trận, nếu all-in thắng, nhận thêm thưởng bằng 35% pot, tối đa +8đ; nếu thua, hồi lại 3đ."),
+  upgrade("cheat-crown-swap", "cheat", "Đổi Ngai", "Top 1", "Từ vòng 2: nếu thắng pot có top 1 tham gia, chuyển tối đa 5đ từ họ sang bạn.", { minRound: 2 }),
+  upgrade("cheat-tax-raid", "cheat", "Đột Kích Kho Bạc", "Economy", "Đến hết trận, cuối mỗi vòng lấy 1đ từ mỗi người đang có ít nhất 18đ."),
+  upgrade("cheat-double-core", "cheat", "Lõi Kép Bất Hợp Pháp", "Draft", "Đến hết trận, mỗi vòng chọn lõi bạn có thể chọn 2 thẻ trong 3 lựa chọn, nhưng thẻ thứ hai làm bạn mất 3đ."),
+  upgrade("cheat-forged-interest", "cheat", "Lãi Giả", "Economy", "Đến hết trận, lợi tức của bạn tối thiểu là 3đ và vẫn có thể chạm trần 5đ."),
+  upgrade("cheat-blackmail", "cheat", "Tống Tiền", "Thông tin", "Đến hết trận, đầu mỗi vòng chọn 1 người: họ đưa bạn 1đ hoặc công khai sức mạnh hand theo yếu/trung bình/mạnh."),
+  upgrade("cheat-royal-immunity", "cheat", "Miễn Tội Hoàng Gia", "Phòng thủ", "Đến hết trận, mỗi vòng lần đầu bạn thua pot, hoàn lại tối đa 3đ từ phần đã bet."),
+  upgrade("cheat-bank-heist", "cheat", "Cướp Ngân Hàng", "Economy", "Nhận ngay +8đ. Đến hết trận, mỗi khi bạn thắng pot, gửi thêm 1đ vào kho; đủ 5đ trong kho thì rút ra."),
+  upgrade("cheat-scripted-river", "cheat", "River Viết Sẵn", "Bài", "Đến hết trận, mỗi vòng 1 lần trước showdown, được đổi 1 lá chung cuối hoặc 1 lá riêng theo luật bàn."),
+  upgrade("cheat-infinite-reraise", "cheat", "Vòng Raise Vô Hạn", "Bet", "Đến hết trận, mỗi vòng mỗi lần bạn raise và có người call, nhận +1đ; tối đa +4đ mỗi vòng."),
+  upgrade("cheat-contract-killer", "cheat", "Hợp Đồng Sát Thủ", "Bounty", "Đến hết trận, đầu mỗi vòng chọn 1 mục tiêu. Nếu họ mất ít nhất 5đ vì pot bạn thắng, nhận thêm +6đ."),
+  upgrade("cheat-corrupt-dealer", "cheat", "Dealer Bị Mua", "Bài", "Đến hết trận, mỗi vòng 1 lần, yêu cầu chia lại 1 lá cho bạn hoặc cho một đối thủ trước showdown."),
+  upgrade("cheat-red-jackpot", "cheat", "Jackpot Đỏ", "Snowball", "Đến hết trận, nếu thắng pot có ít nhất 4 người tham gia, nhận thêm +8đ."),
+  upgrade("cheat-anti-gravity", "cheat", "Bankroll Không Trọng Lực", "Economy", "Đến hết trận, lợi tức của bạn tính như đang có thêm 15đ, vẫn giới hạn tối đa 5đ."),
+  upgrade("cheat-perfect-crime", "cheat", "Tội Ác Hoàn Hảo", "Bet", "Đến hết trận, lần đầu mỗi vòng sau khi thắng pot, lấy thêm +3đ; hiệu ứng này không thể bị sao chép hoặc chặn."),
 ];
 
 let state = loadState();
@@ -342,9 +363,13 @@ function normalizeTier(value) {
   return tierOrder.includes(value) ? value : null;
 }
 
+function normalizeDraftTier(value) {
+  return draftTierOrder.includes(value) ? value : null;
+}
+
 function ratesToTier(value) {
   if (!value || typeof value !== "object") return null;
-  const entries = tierOrder.map((tier) => [tier, Number(value[tier]) || 0]);
+  const entries = draftTierOrder.map((tier) => [tier, Number(value[tier]) || 0]);
   const [bestTier, bestValue] = entries.sort((first, second) => second[1] - first[1])[0];
   return bestValue > 0 ? bestTier : null;
 }
@@ -353,7 +378,7 @@ function normalizeTierOverrides(tierOverrides, rateOverrides) {
   const normalized = {};
   if (tierOverrides && typeof tierOverrides === "object") {
     Object.entries(tierOverrides).forEach(([round, tier]) => {
-      const normalizedTier = normalizeTier(tier);
+      const normalizedTier = normalizeDraftTier(tier);
       if (normalizedTier) normalized[String(clamp(Number(round) || 1, 1, 99))] = normalizedTier;
     });
   }
@@ -448,7 +473,7 @@ function getStatusLabel() {
 }
 
 function renderTierBars() {
-  const rates = getRoundRates(state.round);
+  const rates = getDisplayTierRates();
 
   elements.tierBars.innerHTML = tierOrder
     .map((tier) => {
@@ -1078,7 +1103,7 @@ function toggleHostPanel() {
 }
 
 async function saveNextTier(tier) {
-  const nextTier = normalizeTier(tier);
+  const nextTier = normalizeDraftTier(tier);
   if (!nextTier) return;
 
   if (serverState.connected) {
@@ -1126,7 +1151,18 @@ function getPresetRoundTier(round) {
 
 function getEffectiveTierRates() {
   const rawRates = getRoundRates(state.round);
-  return Object.fromEntries(tierOrder.map((tier) => [tier, (rawRates[tier] || 0) / 100]));
+  const cheatRate = getTierAvailableRemaining("cheat") > 0 ? CHEAT_ROLL_CHANCE : 0;
+  const normalScale = 1 - cheatRate;
+
+  return Object.fromEntries(tierOrder.map((tier) => {
+    if (tier === "cheat") return [tier, cheatRate];
+    return [tier, ((rawRates[tier] || 0) / 100) * normalScale];
+  }));
+}
+
+function getDisplayTierRates() {
+  const effectiveRates = getEffectiveTierRates();
+  return Object.fromEntries(tierOrder.map((tier) => [tier, Math.round((effectiveRates[tier] || 0) * 100)]));
 }
 
 function getSlotChanceForCard(card) {
