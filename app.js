@@ -1,5 +1,5 @@
 const STORAGE_KEY = "poker-tactics-player-v1";
-const CARD_LIBRARY_VERSION = 2;
+const CARD_LIBRARY_VERSION = 3;
 
 const tierOrder = ["silver", "gold", "diamond"];
 
@@ -27,25 +27,25 @@ const tierInfo = {
   },
 };
 
-const roundRates = [
-  { silver: 100, gold: 0, diamond: 0 },
-  { silver: 90, gold: 10, diamond: 0 },
-  { silver: 75, gold: 25, diamond: 0 },
-  { silver: 60, gold: 40, diamond: 0 },
-  { silver: 45, gold: 55, diamond: 0 },
-  { silver: 35, gold: 50, diamond: 15 },
-  { silver: 25, gold: 50, diamond: 25 },
-  { silver: 15, gold: 45, diamond: 40 },
-];
+const tierRates = {
+  silver: { silver: 100, gold: 0, diamond: 0 },
+  gold: { silver: 0, gold: 100, diamond: 0 },
+  diamond: { silver: 0, gold: 0, diamond: 100 },
+};
 
-function upgrade(id, tier, name, tag, text, copies) {
+const defaultRoundTiers = ["silver", "silver", "gold", "gold", "diamond"];
+
+function upgrade(id, tier, name, tag, text, copiesOrOptions) {
   const defaultCopies = tier === "diamond" ? 2 : tier === "gold" ? 4 : 6;
+  const options = typeof copiesOrOptions === "object" ? copiesOrOptions : {};
+  const copies = typeof copiesOrOptions === "number" ? copiesOrOptions : options.copies;
   return {
     id,
     tier,
     name,
     tag,
     copies: copies || defaultCopies,
+    minRound: options.minRound || 1,
     text,
   };
 }
@@ -55,7 +55,7 @@ const defaultCards = [
   upgrade("silver-small-interest", "silver", "Lãi Nhỏ", "Economy", "Nếu thua vòng này, nhận +1đ cuối vòng."),
   upgrade("silver-compound-light", "silver", "Lãi Kép Nhẹ", "Economy", "Nếu vòng này bạn không all-in, nhận thêm +1đ."),
   upgrade("silver-emergency-fund", "silver", "Quỹ Dự Phòng", "Comeback", "Khi còn dưới 10đ, nhận thêm +2đ cuối vòng."),
-  upgrade("silver-hold-money", "silver", "Giữ Tiền Là Thắng", "Economy", "Nếu kết thúc vòng có ít nhất 30đ, nhận thêm +2đ."),
+  upgrade("silver-hold-money", "silver", "Giữ Tiền Là Thắng", "Economy", "Nếu kết thúc vòng có ít nhất 15đ, nhận thêm +2đ."),
   upgrade("silver-no-overspend", "silver", "Không Tiêu Hoang", "Economy", "Nếu tổng bet vòng này không vượt quá 5đ, nhận +2đ."),
   upgrade("silver-soft-call", "silver", "Bet Mềm", "Bet", "Lần call đầu tiên mỗi vòng giảm chi phí 1đ."),
   upgrade("silver-first-strike", "silver", "Đòn Phủ Đầu", "Bet", "Nếu là người bet đầu tiên, bet đầu tiên được giảm 1đ."),
@@ -64,21 +64,21 @@ const defaultCards = [
   upgrade("silver-bad-hand-insurance", "silver", "Bảo Hiểm Bài Xấu", "Bài", "Nếu bài cuối thuộc nhóm yếu nhất bàn, nhận +2đ."),
   upgrade("silver-range-note", "silver", "Ghi Chú Range", "Thông tin", "Theo dõi range một đối thủ trong vòng hiện tại."),
   upgrade("silver-table-tempo", "silver", "Tempo Bàn", "Thông tin", "Sau mỗi vòng, ghi lại người chơi chủ động nhất; nếu thắng họ, nhận +1đ."),
-  upgrade("silver-bottom-floor", "silver", "Dưới Đáy Vực", "Comeback", "Nếu đang ít tiền nhất bàn, nhận thêm +3đ."),
-  upgrade("silver-chaser", "silver", "Kẻ Bám Đuổi", "Comeback", "Nếu thua vòng này và không top 1 tiền, nhận +2đ."),
-  upgrade("silver-last-chip", "silver", "Một Đồng Cũng Chơi", "Comeback", "Khi còn dưới 8đ, lần all-in tiếp theo cộng +2đ vào pot giả lập."),
+  upgrade("silver-bottom-floor", "silver", "Dưới Đáy Vực", "Comeback", "Từ vòng 2: nếu đang ít tiền nhất bàn, nhận thêm +3đ.", { minRound: 2 }),
+  upgrade("silver-chaser", "silver", "Kẻ Bám Đuổi", "Comeback", "Từ vòng 2: nếu thua vòng này và không top 1 tiền, nhận +2đ.", { minRound: 2 }),
+  upgrade("silver-last-chip", "silver", "Một Đồng Cũng Chơi", "Comeback", "Từ vòng 2: khi còn dưới 5đ, lần all-in tiếp theo cộng +2đ vào pot giả lập.", { minRound: 2 }),
   upgrade("silver-table-talk", "silver", "Mồm Mép", "Chaos", "Mỗi vòng 1 lần, bluff khiến ít nhất 1 người fold thì nhận +1đ."),
   upgrade("silver-temporary-friend", "silver", "Bạn Thân Tạm Thời", "Chaos", "Chọn 1 người; nếu cả hai cùng sống hết vòng, cả hai nhận +1đ."),
   upgrade("silver-lucky-roll", "silver", "Cầu May", "Chaos", "Tung xúc xắc: 1-2 mất 1đ, 3-4 nhận 1đ, 5-6 nhận 3đ."),
   upgrade("silver-light-ante", "silver", "Phí Bàn Nhẹ", "Tiến độ", "Giảm phí vào bàn của bạn 1đ ở vòng này, tối thiểu 0đ."),
   upgrade("silver-small-pot-cover", "silver", "Pot Nhỏ An Toàn", "Bet", "Nếu thua pot từ 8đ trở xuống, hoàn lại 1đ."),
   upgrade("silver-blind-value", "silver", "Blind Có Giá", "Bet", "Nếu thắng pot khi ở blind, nhận thêm +2đ."),
-  upgrade("silver-rich-tax-chip", "silver", "Thuế Nhẹ", "Top 1", "Nếu top 1 nhận lợi tức vòng này, bạn nhận +1đ."),
-  upgrade("silver-mini-bounty", "silver", "Bounty Nhỏ", "Top 1", "Nếu thắng pot có người nhiều tiền nhất tham gia, nhận thêm +1đ."),
+  upgrade("silver-rich-tax-chip", "silver", "Thuế Nhẹ", "Top 1", "Từ vòng 2: nếu top 1 nhận lợi tức vòng này, bạn nhận +1đ.", { minRound: 2 }),
+  upgrade("silver-mini-bounty", "silver", "Bounty Nhỏ", "Top 1", "Từ vòng 2: nếu thắng pot có người nhiều tiền nhất tham gia, nhận thêm +1đ.", { minRound: 2 }),
 
   upgrade("gold-saving-account", "gold", "Gửi Tiết Kiệm", "Economy", "Lợi tức tăng từ 1đ/10đ thành 1.5đ/10đ, làm tròn xuống."),
   upgrade("gold-interest-plus", "gold", "Lợi Tức +1", "Economy", "Lợi tức cuối vòng của bạn tăng thêm +1đ."),
-  upgrade("gold-private-bank", "gold", "Ngân Hàng Riêng", "Economy", "Lợi tức tính theo 1đ/9đ thay vì 1đ/10đ."),
+  upgrade("gold-private-bank", "gold", "Ngân Hàng Riêng", "Economy", "Lợi tức tính theo 1đ/8đ thay vì 1đ/10đ, vẫn giới hạn tối đa 5đ."),
   upgrade("gold-greedy-interest", "gold", "Tham Lam", "Economy", "Lợi tức tăng thêm +1đ, nhưng thua pot thì mất thêm 1đ."),
   upgrade("gold-pressure-raise", "gold", "Raise Áp Lực", "Bet", "Lần raise đầu tiên mỗi vòng khiến người theo phải trả thêm +1đ."),
   upgrade("gold-price-squeezer", "gold", "Kẻ Ép Giá", "Bet", "Khi raise làm ít nhất 2 người fold, nhận +2đ."),
@@ -90,46 +90,102 @@ const defaultCards = [
   upgrade("gold-peek", "gold", "Nhìn Trộm", "Thông tin", "Mỗi vòng 1 lần, được xem 1 lá bài úp hoặc 1 thông tin bí mật."),
   upgrade("gold-instinct", "gold", "Linh Cảm", "Thông tin", "Trước showdown, được hỏi bài mình có mạnh hơn ít nhất 1 người không."),
   upgrade("gold-keep-card", "gold", "Giữ Bài", "Bài", "Sau khi chia bài, được giữ lại 1 lá và bốc lại phần còn lại."),
-  upgrade("gold-hunt-top-one", "gold", "Săn Top 1", "Top 1", "Nếu thắng pot trước người đang top 1, nhận thêm +3đ."),
-  upgrade("gold-rich-tax", "gold", "Thuế Nhà Giàu", "Top 1", "Người nhiều tiền nhất mất 2đ, bạn nhận 1đ."),
-  upgrade("gold-interest-thief", "gold", "Kẻ Cướp Lãi", "Top 1", "Một lần mỗi vòng, chọn 1 người: họ mất 1đ lợi tức, bạn nhận 1đ."),
-  upgrade("gold-wanted", "gold", "Truy Nã", "Top 1", "Đặt bounty lên người nhiều tiền nhất; ai thắng pot có họ tham gia nhận +3đ."),
-  upgrade("gold-comeback-pot", "gold", "Lội Ngược Dòng", "Comeback", "Nếu thắng pot khi đang ít tiền nhất bàn, nhận thêm +4đ."),
-  upgrade("gold-last-chance", "gold", "Cơ Hội Cuối", "Comeback", "Lần đầu về 0đ, sống lại với 5đ. Chỉ dùng 1 lần."),
-  upgrade("gold-leader-pressure", "gold", "Áp Lực Dẫn Đầu", "Top 1", "Người nhiều tiền nhất phải bet tối thiểu 2đ nếu muốn tham gia vòng."),
+  upgrade("gold-hunt-top-one", "gold", "Săn Top 1", "Top 1", "Từ vòng 2: nếu thắng pot trước người đang top 1, nhận thêm +3đ.", { minRound: 2 }),
+  upgrade("gold-rich-tax", "gold", "Thuế Nhà Giàu", "Top 1", "Từ vòng 2: người nhiều tiền nhất mất 2đ, bạn nhận 1đ.", { minRound: 2 }),
+  upgrade("gold-interest-thief", "gold", "Kẻ Cướp Lãi", "Top 1", "Từ vòng 2: mỗi vòng chọn 1 người; họ mất 1đ lợi tức, bạn nhận 1đ.", { minRound: 2 }),
+  upgrade("gold-wanted", "gold", "Truy Nã", "Top 1", "Từ vòng 2: đặt bounty lên người nhiều tiền nhất; ai thắng pot có họ tham gia nhận +3đ.", { minRound: 2 }),
+  upgrade("gold-comeback-pot", "gold", "Lội Ngược Dòng", "Comeback", "Từ vòng 2: nếu thắng pot khi đang ít tiền nhất bàn, nhận thêm +4đ.", { minRound: 2 }),
+  upgrade("gold-last-chance", "gold", "Cơ Hội Cuối", "Comeback", "Từ vòng 2: lần đầu về 0đ, sống lại với 5đ. Chỉ dùng 1 lần.", { minRound: 2 }),
+  upgrade("gold-leader-pressure", "gold", "Áp Lực Dẫn Đầu", "Top 1", "Từ vòng 2: người nhiều tiền nhất phải bet tối thiểu 2đ nếu muốn tham gia vòng.", { minRound: 2 }),
   upgrade("gold-reversal", "gold", "Đảo Chiều", "Chaos", "Một lần mỗi trận, người thắng pot nhận ít hơn 2đ; phần đó chia cho người thua nhiều nhất."),
-  upgrade("gold-rage-counter", "gold", "Bộ Đếm Nộ", "Comeback", "Thua showdown tích 1 điểm; khi thắng nhận +2đ mỗi điểm rồi xóa."),
+  upgrade("gold-rage-counter", "gold", "Bộ Đếm Nộ", "Comeback", "Từ vòng 2: thua showdown tích 1 điểm; khi thắng nhận +2đ mỗi điểm rồi xóa.", { minRound: 2 }),
   upgrade("gold-death-duel", "gold", "Duel Đến Chết", "Tiến độ", "Một lần mỗi trận, tuyên bố pot tối thiểu 10đ cho vòng hiện tại."),
+  upgrade("gold-interest-bank", "gold", "Sổ Lãi Trần", "Economy", "Nếu lợi tức của bạn chạm trần 5đ, nhận thêm +2đ một lần trong vòng đó."),
+  upgrade("gold-early-dividend", "gold", "Cổ Tức Sớm", "Economy", "Sau khi chọn lõi này, nhận +1đ ngay và +1đ cuối 2 vòng kế tiếp nếu còn sống."),
+  upgrade("gold-ante-farmer", "gold", "Nông Dân Ante", "Economy", "Mỗi khi bạn thắng pot nhỏ hơn 8đ, nhận thêm +2đ."),
+  upgrade("gold-save-or-surge", "gold", "Giữ Hay Bung", "Economy", "Đầu vòng chọn: không raise vòng này để nhận +3đ cuối vòng, hoặc mọi raise đầu của bạn +1đ áp lực."),
+  upgrade("gold-late-fee", "gold", "Phí Vào Muộn", "Bet", "Người cuối cùng call raise của bạn phải trả thêm 1đ vào pot."),
+  upgrade("gold-double-barrel", "gold", "Hai Nòng", "Bet", "Nếu bạn raise ở 2 lượt bet liên tiếp trong cùng vòng, nhận +3đ nếu thắng pot."),
+  upgrade("gold-pot-skimmer", "gold", "Vớt Mép Pot", "Bet", "Nếu bạn fold sau khi đã bỏ ít nhất 3đ vào pot, hoàn lại 2đ. Mỗi vòng 1 lần."),
+  upgrade("gold-side-quest", "gold", "Kèo Phụ", "Bet", "Đầu vòng chọn 1 đối thủ; nếu bạn thắng pot có họ tham gia, nhận +3đ."),
+  upgrade("gold-clean-fold", "gold", "Fold Sạch", "Kỷ luật", "Nếu bạn fold trước khi bỏ quá 1đ vào pot, nhận 1 dấu. Đủ 3 dấu đổi lấy +5đ."),
+  upgrade("gold-scouting-report", "gold", "Báo Cáo Trinh Sát", "Thông tin", "Mỗi vòng trước bet đầu, hỏi 1 người xem họ có muốn chơi hand này không; họ chỉ trả lời Có/Không."),
+  upgrade("gold-suit-contract", "gold", "Hợp Đồng Chất", "Bài", "Trước khi xem bài, chọn 1 chất. Nếu showdown hand thắng có chất đó, nhận +4đ."),
+  upgrade("gold-card-market", "gold", "Chợ Bài", "Bài", "Mỗi vòng 1 lần, trả 1đ để đổi 1 lá. Nếu vẫn thua showdown, hoàn lại 1đ."),
+  upgrade("gold-quiet-table", "gold", "Bàn Yên", "Chaos", "Một lần mỗi vòng, cấm table talk chiến thuật trong 1 lượt bet; ai vi phạm nộp 1đ vào pot."),
+  upgrade("gold-shared-bounty", "gold", "Bounty Chia Đôi", "Top 1", "Từ vòng 2: đặt bounty 4đ lên top 1; nếu người khác ăn bounty, bạn cũng nhận 2đ.", { minRound: 2 }),
+  upgrade("gold-short-stack-sponsor", "gold", "Nhà Tài Trợ Short Stack", "Comeback", "Từ vòng 2: nếu bạn bắt đầu vòng với 5đ hoặc ít hơn, nhận +2đ và 1 lần call giảm 1đ.", { minRound: 2 }),
+  upgrade("gold-vendetta", "gold", "Ân Oán", "Comeback", "Từ vòng 2: chọn người vừa thắng bạn gần nhất; nếu thắng pot trước họ, nhận +5đ rồi xóa mục tiêu.", { minRound: 2 }),
 
-  upgrade("diamond-banker", "diamond", "Chủ Ngân Hàng", "Economy", "Cuối mỗi vòng, nhận +1đ cho mỗi người chơi còn sống, tối đa +5đ."),
-  upgrade("diamond-venture", "diamond", "Đầu Tư Mạo Hiểm", "Economy", "Đầu vòng hy sinh 5đ; nếu thắng pot vòng đó, nhận lại 12đ."),
+  upgrade("diamond-banker", "diamond", "Chủ Ngân Hàng", "Economy", "Cuối mỗi vòng, nhận +1đ cho mỗi 2 người chơi còn sống, tối đa +5đ."),
+  upgrade("diamond-venture", "diamond", "Đầu Tư Mạo Hiểm", "Economy", "Đầu vòng hy sinh 3đ; nếu thắng pot vòng đó, nhận lại 9đ."),
   upgrade("diamond-lock-pot", "diamond", "Khóa Pot", "Bet", "Một lần mỗi vòng, khi pot đạt 15đ, không ai được raise thêm."),
   upgrade("diamond-finisher", "diamond", "Đòn Kết Liễu", "Bet", "Nếu thắng một người khiến họ về 0đ, nhận thêm +8đ."),
   upgrade("diamond-fate-redraw", "diamond", "Bốc Lại Định Mệnh", "Bài", "Một lần mỗi trận, sau khi thấy bài mình, bỏ hand hiện tại và nhận hand mới."),
   upgrade("diamond-third-hidden-card", "diamond", "Bài Ẩn Thứ Ba", "Bài", "Mỗi vòng bốc thêm 1 lá úp riêng; showdown chọn 2 trong 3 lá."),
   upgrade("diamond-luck-blocker", "diamond", "Chặn Vận May", "Bài", "Một lần mỗi vòng, hủy hiệu ứng đổi bài, bốc lại hoặc xem bài của người khác."),
-  upgrade("diamond-rage-scaling", "diamond", "Càng Thua Càng Mạnh", "Comeback", "Mỗi lần thua showdown tích 1 điểm; khi thắng nhận +3đ mỗi điểm rồi xóa."),
-  upgrade("diamond-survival-cover", "diamond", "Bảo Hiểm Sinh Tồn", "Comeback", "Nếu còn dưới 10đ, bạn không thể mất quá 5đ trong một vòng."),
-  upgrade("diamond-rich-assassin", "diamond", "Sát Thủ Nhà Giàu", "Top 1", "Nếu thắng pot có người nhiều tiền nhất tham gia, lấy thêm 5đ trực tiếp từ họ."),
-  upgrade("diamond-steal-interest", "diamond", "Cướp Lợi Tức", "Top 1", "Mỗi vòng chọn 1 người; nhận toàn bộ lợi tức của họ, tối đa +6đ."),
+  upgrade("diamond-rage-scaling", "diamond", "Càng Thua Càng Mạnh", "Comeback", "Từ vòng 2: mỗi lần thua showdown tích 1 điểm; khi thắng nhận +3đ mỗi điểm rồi xóa.", { minRound: 2 }),
+  upgrade("diamond-survival-cover", "diamond", "Bảo Hiểm Sinh Tồn", "Comeback", "Từ vòng 2: nếu còn dưới 6đ, bạn không thể mất quá 4đ trong một vòng.", { minRound: 2 }),
+  upgrade("diamond-rich-assassin", "diamond", "Sát Thủ Nhà Giàu", "Top 1", "Từ vòng 2: nếu thắng pot có người nhiều tiền nhất tham gia, lấy thêm 5đ trực tiếp từ họ.", { minRound: 2 }),
+  upgrade("diamond-steal-interest", "diamond", "Cướp Lợi Tức", "Top 1", "Từ vòng 2: mỗi vòng chọn 1 người; nhận toàn bộ lợi tức của họ, tối đa +5đ.", { minRound: 2 }),
   upgrade("diamond-fate-coin", "diamond", "Đồng Xu Định Mệnh", "Chaos", "Mỗi vòng 1 lần, khi thua showdown tung xu; ngửa hoàn lại 50% số đã bet."),
-  upgrade("diamond-revive", "diamond", "Hồi Sinh Kim Cương", "Comeback", "Lần đầu về 0đ, hồi sinh với 12đ và nhận ngay 1 lựa chọn lõi mới không có Kim cương."),
-  upgrade("diamond-danger-compound", "diamond", "Lãi Kép Nguy Hiểm", "Economy", "Lợi tức x2, nhưng nếu thua showdown thì mất thêm 3đ."),
-  upgrade("diamond-giant-pot", "diamond", "Pot Khổng Lồ", "Bet", "Nếu pot đạt ít nhất 20đ, bạn nhận thêm +5đ nếu thắng pot."),
-  upgrade("diamond-royal-bounty", "diamond", "Bounty Hoàng Gia", "Top 1", "Top 1 bị đặt bounty 10đ; ai thắng pot có họ tham gia nhận bounty."),
+  upgrade("diamond-revive", "diamond", "Hồi Sinh Kim Cương", "Comeback", "Từ vòng 2: lần đầu về 0đ, hồi sinh với 8đ và nhận ngay 1 lựa chọn lõi mới không có Kim cương.", { minRound: 2 }),
+  upgrade("diamond-danger-compound", "diamond", "Lãi Kép Nguy Hiểm", "Economy", "Lợi tức x2, vẫn giới hạn tối đa 5đ; nếu thua showdown thì mất thêm 3đ."),
+  upgrade("diamond-giant-pot", "diamond", "Pot Khổng Lồ", "Bet", "Nếu pot đạt ít nhất 15đ, bạn nhận thêm +5đ nếu thắng pot."),
+  upgrade("diamond-royal-bounty", "diamond", "Bounty Hoàng Gia", "Top 1", "Từ vòng 2: top 1 bị đặt bounty 8đ; ai thắng pot có họ tham gia nhận bounty.", { minRound: 2 }),
   upgrade("diamond-jungle-rule", "diamond", "Luật Rừng", "Chaos", "Mỗi vòng 1 lần, chọn luật phụ: không raise, không fold sau call, hoặc pot tối thiểu 10đ."),
   upgrade("diamond-death-hand", "diamond", "Ván Bài Tử Thần", "Tiến độ", "Một lần mỗi trận, người thắng pot nhận +10đ, người thua nhiều nhất mất thêm 5đ."),
+  upgrade("diamond-royal-treasury", "diamond", "Kho Bạc Hoàng Gia", "Economy", "Mỗi khi bạn nhận đủ 5đ lợi tức, đặt 1 dấu kho bạc. Đủ 3 dấu nhận +10đ."),
+  upgrade("diamond-interest-engine", "diamond", "Động Cơ Lợi Tức", "Economy", "Sau khi nhận lợi tức, nếu bạn không thắng pot vòng đó, nhận thêm +2đ."),
+  upgrade("diamond-black-card", "diamond", "Thẻ Đen", "Economy", "Mỗi vòng 1 lần, mua 1 quyền: trả 2đ để đổi bài, xem thông tin, hoặc giảm 2đ bet tiếp theo."),
+  upgrade("diamond-pot-alchemy", "diamond", "Giả Kim Pot", "Economy", "Khi pot đạt ít nhất 12đ, bạn có thể khóa +4đ thưởng cho người thắng pot nếu người đó là bạn."),
+  upgrade("diamond-grand-auction", "diamond", "Đấu Giá Lõi", "Economy", "Sau mỗi vòng chọn thẻ, bạn có thể trả 3đ để bốc thêm 1 lựa chọn Bạc/Vàng phụ và lấy nếu muốn."),
+  upgrade("diamond-final-table", "diamond", "Bàn Chung Kết", "Bet", "Mỗi vòng, lần đầu bạn raise sau khi đã có ít nhất 3 người vào pot sẽ ép mỗi người theo thêm 1đ."),
+  upgrade("diamond-blood-price", "diamond", "Giá Máu", "Bet", "Nếu bạn thắng pot mà đã all-in, nhận thêm +6đ; nếu thua, người thắng nhận thêm +2đ từ ngân hàng."),
+  upgrade("diamond-iron-bankroll", "diamond", "Bankroll Thép", "Bet", "Mỗi vòng 1 lần, nếu một bet khiến bạn còn dưới 3đ, giảm bet đó 3đ."),
+  upgrade("diamond-no-limit-crown", "diamond", "Vương Miện No Limit", "Bet", "Một lần mỗi trận, tuyên bố No Limit: vòng này mọi raise tối thiểu +2đ và người thắng pot nhận +8đ."),
+  upgrade("diamond-pot-vortex", "diamond", "Lốc Xoáy Pot", "Bet", "Nếu có ít nhất 4 người góp pot, người thắng nhận thêm +1đ cho mỗi người đã fold trước showdown."),
+  upgrade("diamond-oracle", "diamond", "Tiên Tri", "Thông tin", "Mỗi vòng trước bet đầu, hỏi quản trò 1 câu Có/Không về sức mạnh tương đối của hand bạn."),
+  upgrade("diamond-public-enemy", "diamond", "Kẻ Thù Công Khai", "Thông tin", "Sau khi xem bài, chọn 1 người. Họ phải công bố họ mạnh, trung bình hay yếu theo cảm nhận."),
+  upgrade("diamond-time-walk", "diamond", "Đi Ngược Thời Gian", "Bài", "Một lần mỗi trận, sau khi một lá/hand bị đổi, hủy lần đổi đó và quay về bài trước đó."),
+  upgrade("diamond-perfect-mulligan", "diamond", "Mulligan Hoàn Hảo", "Bài", "Mỗi vòng 1 lần, bỏ toàn bộ bài riêng và nhận bài mới; nếu sau đó thắng, không nhận lợi tức vòng này."),
+  upgrade("diamond-split-destiny", "diamond", "Chia Đôi Định Mệnh", "Bài", "Trước showdown, chọn giữ hand hiện tại hoặc bốc hand mới. Nếu bốc mới, phải theo kết quả mới."),
+  upgrade("diamond-mirror-match", "diamond", "Gương Đấu", "Chaos", "Một lần mỗi vòng, sao chép hiệu ứng lõi vừa được người khác kích hoạt nếu hợp lệ với bạn."),
+  upgrade("diamond-chaos-market", "diamond", "Chợ Hỗn Loạn", "Chaos", "Đầu vòng, mỗi người có thể trả 1đ vào chợ. Người thắng pot lấy toàn bộ chợ."),
+  upgrade("diamond-kingmaker", "diamond", "Người Dựng Vua", "Chaos", "Mỗi vòng chọn 1 người không phải bạn. Nếu họ thắng pot, bạn nhận +4đ; nếu họ thua showdown, bạn mất 2đ."),
+  upgrade("diamond-table-lawyer", "diamond", "Luật Sư Bàn Chơi", "Chaos", "Một lần mỗi vòng, phủ quyết 1 luật phụ hoặc 1 hiệu ứng ép bet nhắm vào bạn."),
+  upgrade("diamond-alliance-breaker", "diamond", "Kẻ Phá Liên Minh", "Chaos", "Nếu hai người chơi cùng hợp tác/nhắm mục tiêu bạn trong vòng, chọn một người mất 2đ."),
+  upgrade("diamond-underdog-contract", "diamond", "Khế Ước Kèo Dưới", "Comeback", "Từ vòng 2: nếu bạn bắt đầu vòng ở nửa dưới tiền, thắng pot nhận thêm +6đ.", { minRound: 2 }),
+  upgrade("diamond-phoenix-debt", "diamond", "Nợ Phượng Hoàng", "Comeback", "Từ vòng 2: lần đầu về 0đ, hồi sinh với 10đ nhưng 3 vòng kế tiếp lợi tức của bạn giảm 1đ.", { minRound: 2 }),
+  upgrade("diamond-crown-tax", "diamond", "Thuế Vương Miện", "Top 1", "Từ vòng 2: mỗi khi top 1 thắng pot, họ nộp 2đ vào bounty chung. Người hạ họ lấy bounty.", { minRound: 2 }),
+  upgrade("diamond-throne-breaker", "diamond", "Phá Ngai", "Top 1", "Từ vòng 2: nếu bạn tự tay khiến top 1 mất ít nhất 5đ trong vòng, nhận +7đ.", { minRound: 2 }),
+  upgrade("diamond-endgame-sponsor", "diamond", "Nhà Tài Trợ Endgame", "Tiến độ", "Khi còn 3 người hoặc ít hơn, đầu mỗi vòng nhận +3đ và 1 lần đổi bài miễn phí.", { minRound: 3 }),
 ];
 
 let state = loadState();
 let toastTimer = null;
 let audioContext = null;
+let serverState = {
+  connected: false,
+  isHost: false,
+  gameId: null,
+  round: 0,
+  phase: "offline",
+  currentTier: "silver",
+  nextTier: null,
+  blockedCardIds: [],
+  selectedThisRound: [],
+  offerSignatures: [],
+};
+const hostToken = new URLSearchParams(window.location.search).get("host") || "";
+const playerId = getOrCreatePlayerId();
 
 const elements = {};
 
 document.addEventListener("DOMContentLoaded", () => {
   bindElements();
   bindEvents();
+  initServerSync();
   render();
 });
 
@@ -146,14 +202,13 @@ function bindElements() {
   elements.draftBoard = document.querySelector("#draftBoard");
   elements.handCount = document.querySelector("#handCount");
   elements.handGrid = document.querySelector("#handGrid");
+  elements.choiceSection = document.querySelector("#choiceSection");
+  elements.handPanel = document.querySelector("#handPanel");
   elements.hostPanel = document.querySelector("#hostPanel");
-  elements.hostForm = document.querySelector("#hostForm");
-  elements.rateSilverInput = document.querySelector("#rateSilverInput");
-  elements.rateGoldInput = document.querySelector("#rateGoldInput");
-  elements.rateDiamondInput = document.querySelector("#rateDiamondInput");
-  elements.ratesTotal = document.querySelector("#ratesTotal");
-  elements.nextRatesLabel = document.querySelector("#nextRatesLabel");
+  elements.nextTierButtons = document.querySelectorAll("[data-action='select-next-tier']");
+  elements.nextTierLabel = document.querySelector("#nextTierLabel");
   elements.blockedLabel = document.querySelector("#blockedLabel");
+  elements.hostButton = document.querySelector('[data-action="toggle-host"]');
   elements.soundButton = document.querySelector('[data-action="toggle-sound"]');
   elements.toast = document.querySelector("#toast");
 }
@@ -164,15 +219,6 @@ function bindEvents() {
   elements.nameForm.addEventListener("submit", (event) => {
     event.preventDefault();
     savePlayerName(elements.playerNameInput.value.trim());
-  });
-
-  elements.hostForm.addEventListener("submit", (event) => {
-    event.preventDefault();
-    saveNextRates();
-  });
-
-  [elements.rateSilverInput, elements.rateGoldInput, elements.rateDiamondInput].forEach((input) => {
-    input.addEventListener("input", updateRatesTotal);
   });
 }
 
@@ -192,14 +238,15 @@ function loadState() {
 function createDefaultState() {
   return {
     libraryVersion: CARD_LIBRARY_VERSION,
+    gameId: null,
     playerName: "",
     round: 1,
     soundEnabled: true,
     cards: defaultCards.map((card) => ({ ...card, remaining: card.copies })),
     offer: [],
     hand: [],
-    nextRates: null,
-    roundRateOverrides: {},
+    nextTier: null,
+    roundTierOverrides: {},
     offerHistory: [],
     nextRoundBlock: null,
   };
@@ -227,6 +274,7 @@ function normalizeState(savedState) {
       tag: String(card.tag || "Nâng cấp"),
       copies,
       remaining,
+      minRound: clamp(Math.floor(Number(card.minRound) || 1), 1, 99),
       text: String(card.text || "Lõi tự tạo."),
     };
   });
@@ -255,14 +303,15 @@ function normalizeState(savedState) {
 
   return {
     libraryVersion: CARD_LIBRARY_VERSION,
+    gameId: savedState.gameId ? String(savedState.gameId) : null,
     playerName: String(savedState.playerName || ""),
     round: clamp(Number(savedState.round) || fallback.round, 1, 99),
     soundEnabled: savedState.soundEnabled !== false,
     cards: normalizedCards,
     offer,
     hand,
-    nextRates: normalizeRates(savedState.nextRates),
-    roundRateOverrides: normalizeRateOverrides(savedState.roundRateOverrides),
+    nextTier: normalizeTier(savedState.nextTier) || ratesToTier(savedState.nextRates),
+    roundTierOverrides: normalizeTierOverrides(savedState.roundTierOverrides, savedState.roundRateOverrides),
     offerHistory: normalizeOfferHistory(savedState.offerHistory, cardIds),
     nextRoundBlock,
   };
@@ -289,24 +338,35 @@ function mergeCardLibrary(baseCards, savedCards) {
   return [...mergedBaseCards, ...customCards];
 }
 
-function normalizeRates(value) {
-  if (!value || typeof value !== "object") return null;
-  const rates = {
-    silver: clamp(Math.floor(Number(value.silver) || 0), 0, 100),
-    gold: clamp(Math.floor(Number(value.gold) || 0), 0, 100),
-    diamond: clamp(Math.floor(Number(value.diamond) || 0), 0, 100),
-  };
-  const total = rates.silver + rates.gold + rates.diamond;
-  return total > 0 ? rates : null;
+function normalizeTier(value) {
+  return tierOrder.includes(value) ? value : null;
 }
 
-function normalizeRateOverrides(value) {
-  if (!value || typeof value !== "object") return {};
-  return Object.fromEntries(
-    Object.entries(value)
-      .map(([round, rates]) => [String(clamp(Number(round) || 1, 1, 99)), normalizeRates(rates)])
-      .filter(([, rates]) => rates),
-  );
+function ratesToTier(value) {
+  if (!value || typeof value !== "object") return null;
+  const entries = tierOrder.map((tier) => [tier, Number(value[tier]) || 0]);
+  const [bestTier, bestValue] = entries.sort((first, second) => second[1] - first[1])[0];
+  return bestValue > 0 ? bestTier : null;
+}
+
+function normalizeTierOverrides(tierOverrides, rateOverrides) {
+  const normalized = {};
+  if (tierOverrides && typeof tierOverrides === "object") {
+    Object.entries(tierOverrides).forEach(([round, tier]) => {
+      const normalizedTier = normalizeTier(tier);
+      if (normalizedTier) normalized[String(clamp(Number(round) || 1, 1, 99))] = normalizedTier;
+    });
+  }
+  if (rateOverrides && typeof rateOverrides === "object") {
+    Object.entries(rateOverrides).forEach(([round, rates]) => {
+      const key = String(clamp(Number(round) || 1, 1, 99));
+      if (!normalized[key]) {
+        const tier = ratesToTier(rates);
+        if (tier) normalized[key] = tier;
+      }
+    });
+  }
+  return normalized;
 }
 
 function normalizeOfferHistory(value, cardIds) {
@@ -343,26 +403,48 @@ function saveState() {
 
 function render() {
   const hasName = Boolean(state.playerName.trim());
-  elements.nameGate.hidden = hasName;
-  elements.playerApp.hidden = !hasName;
+  const appVisible = hasName || serverState.isHost;
+  elements.nameGate.hidden = appVisible;
+  elements.playerApp.hidden = !appVisible;
   elements.playerNameInput.value = hasName ? state.playerName : elements.playerNameInput.value;
+  elements.hostButton.hidden = !serverState.isHost;
+  elements.hostPanel.hidden = !serverState.isHost || elements.hostPanel.hidden;
+  document.querySelectorAll('[data-action="new-offer"]').forEach((button) => {
+    button.hidden = !serverState.isHost && serverState.connected;
+  });
   renderSoundButton();
 
-  if (!hasName) {
+  if (!appVisible) {
     syncIcons();
     return;
   }
 
-  elements.playerNameDisplay.textContent = state.playerName;
-  elements.roundLabel.textContent = `Vòng chọn ${state.round}`;
-  elements.statusLabel.textContent = state.offer.length ? "Đang chọn" : "Đã chọn";
+  const isHostOnly = serverState.isHost && !hasName;
+  elements.choiceSection.hidden = isHostOnly;
+  elements.handPanel.hidden = isHostOnly;
+  elements.playerNameDisplay.textContent = isHostOnly ? "Quản trò" : state.playerName;
+  elements.roundLabel.textContent = serverState.connected
+    ? (serverState.round ? `Vòng chọn ${serverState.round}` : "Chưa mở vòng")
+    : `Vòng chọn ${state.round}`;
+  elements.statusLabel.textContent = getStatusLabel();
   elements.choiceCount.textContent = state.offer.length ? `${state.offer.length}/3` : "0/3";
 
   renderTierBars();
   renderHostPanel();
-  renderOffer();
-  renderHand();
+  if (!isHostOnly) {
+    renderOffer();
+    renderHand();
+  }
   syncIcons();
+}
+
+function getStatusLabel() {
+  if (!serverState.connected) return state.offer.length ? "Đang chọn" : "Đã chọn";
+  if (serverState.isHost) return serverState.phase === "open" ? "Vòng đang mở" : "Đang chờ";
+  if (!state.playerName.trim()) return "Nhập tên";
+  if (serverState.phase !== "open") return "Chờ quản trò";
+  if (hasSelectedRound(serverState.round)) return "Đã chọn";
+  return state.offer.length ? "Đang chọn" : "Chờ bốc";
 }
 
 function renderTierBars() {
@@ -393,6 +475,18 @@ function renderTierBars() {
 }
 
 function renderOffer() {
+  if (serverState.connected && serverState.phase !== "open") {
+    elements.draftBoard.style.setProperty("--draft-columns", 1);
+    elements.draftBoard.innerHTML = `
+      <div class="empty-choice">
+        <i data-lucide="hourglass"></i>
+        <strong>Chờ quản trò</strong>
+        <span>Vòng chọn mới chưa được mở.</span>
+      </div>
+    `;
+    return;
+  }
+
   if (!state.offer.length) {
     elements.draftBoard.style.setProperty("--draft-columns", 1);
     elements.draftBoard.innerHTML = `
@@ -400,7 +494,7 @@ function renderOffer() {
         <i data-lucide="badge-check"></i>
         <strong>Vòng này đã xong</strong>
         <span>Thẻ đã nằm trong bộ của bạn.</span>
-        <button class="primary-button" type="button" data-action="new-offer">
+        <button class="primary-button" type="button" data-action="new-offer" ${serverState.connected && !serverState.isHost ? "hidden" : ""}>
           <i data-lucide="sparkles"></i>
           <span>Vòng mới</span>
         </button>
@@ -494,35 +588,139 @@ function renderSoundButton() {
   elements.soundButton.innerHTML = `<i data-lucide="${state.soundEnabled ? "volume-2" : "volume-x"}"></i>`;
 }
 
-function renderHostPanel() {
-  const nextDefaultRates = getPresetRoundRates(state.round + 1);
-  const rates = state.nextRates || nextDefaultRates;
-  elements.rateSilverInput.value = rates.silver;
-  elements.rateGoldInput.value = rates.gold;
-  elements.rateDiamondInput.value = rates.diamond;
-  updateRatesTotal();
+async function initServerSync() {
+  await refreshServerState();
+  window.setInterval(refreshServerState, 1000);
+}
 
-  if (state.nextRates) {
-    elements.nextRatesLabel.textContent = `Vòng ${state.round + 1}: Bạc ${state.nextRates.silver}%, Vàng ${state.nextRates.gold}%, Kim cương ${state.nextRates.diamond}%.`;
-  } else {
-    elements.nextRatesLabel.textContent = "Vòng sau dùng preset mặc định.";
+async function refreshServerState() {
+  try {
+    const query = hostToken ? `?host=${encodeURIComponent(hostToken)}` : "";
+    const response = await fetch(`/api/state${query}`, { cache: "no-store" });
+    if (!response.ok) throw new Error("state fetch failed");
+    const nextState = await response.json();
+    const nextGameId = nextState.gameId ? String(nextState.gameId) : null;
+    if (nextGameId) {
+      syncLocalGameId(nextGameId);
+    }
+    serverState = {
+      connected: true,
+      isHost: Boolean(nextState.isHost),
+      gameId: nextGameId,
+      round: Number(nextState.round) || 0,
+      phase: String(nextState.phase || "waiting"),
+      currentTier: normalizeTier(nextState.currentTier) || ratesToTier(nextState.currentRates) || "silver",
+      nextTier: normalizeTier(nextState.nextTier) || ratesToTier(nextState.nextRates),
+      blockedCardIds: Array.isArray(nextState.blockedCardIds) ? nextState.blockedCardIds : [],
+      selectedThisRound: Array.isArray(nextState.selectedThisRound)
+        ? nextState.selectedThisRound.map((item) => item.cardId).filter(Boolean)
+        : [],
+      offerSignatures: Array.isArray(nextState.offerSignatures) ? nextState.offerSignatures : [],
+    };
+    syncWithServerState();
+    render();
+  } catch (error) {
+    if (serverState.connected) {
+      serverState = { ...serverState, connected: false, isHost: false, phase: "offline" };
+      render();
+    }
+  }
+}
+
+function syncLocalGameId(gameId) {
+  if (state.gameId === gameId) return;
+
+  if (!state.gameId) {
+    state.gameId = gameId;
+    saveState();
+    return;
   }
 
-  const block = getActiveNextRoundBlock(state.round + 1);
+  resetLocalGame(gameId);
+}
+
+function resetLocalGame(gameId) {
+  const playerName = state.playerName;
+  const soundEnabled = state.soundEnabled;
+  state = createDefaultState();
+  state.gameId = gameId;
+  state.playerName = playerName;
+  state.soundEnabled = soundEnabled;
+  saveState();
+}
+
+async function apiPost(path, payload = {}) {
+  const response = await fetch(path, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ...payload, hostToken }),
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(data.error || "request failed");
+  }
+  await refreshServerState();
+  return data;
+}
+
+function syncWithServerState() {
+  if (!serverState.connected || !state.playerName.trim()) return;
+
+  if (serverState.phase !== "open") {
+    state.offer = [];
+    saveState();
+    return;
+  }
+
+  if (state.round !== serverState.round) {
+    state.round = serverState.round;
+    state.offer = [];
+    if (!hasSelectedRound(serverState.round)) {
+      createOffer(false);
+    }
+    saveState();
+    return;
+  }
+
+  if (!state.offer.length && !hasSelectedRound(serverState.round)) {
+    createOffer(false);
+    saveState();
+  }
+}
+
+function renderHostPanel() {
+  const currentRound = serverState.connected ? serverState.round : state.round;
+  const nextDefaultTier = getPresetRoundTier(currentRound + 1);
+  const pendingTier = serverState.connected ? serverState.nextTier : state.nextTier;
+  const selectedTier = pendingTier || nextDefaultTier;
+
+  elements.nextTierButtons.forEach((button) => {
+    button.setAttribute("aria-pressed", String(button.dataset.tier === selectedTier));
+  });
+
+  if (pendingTier) {
+    elements.nextTierLabel.textContent = `Vòng ${currentRound + 1}: toàn bộ thẻ ${tierInfo[pendingTier].label}.`;
+  } else {
+    elements.nextTierLabel.textContent = `Vòng ${currentRound + 1}: mặc định ${tierInfo[nextDefaultTier].label}.`;
+  }
+
+  const block = serverState.connected
+    ? serverState.selectedThisRound || []
+    : getActiveNextRoundBlock(currentRound + 1);
   if (!block.length) {
     elements.blockedLabel.textContent = "Không có thẻ bị khóa ở vòng kế tiếp.";
     return;
   }
 
   const blockedNames = block.map((cardId) => getCard(cardId)?.name).filter(Boolean).join(", ");
-  elements.blockedLabel.textContent = `Vòng ${state.round + 1} khóa: ${blockedNames}.`;
+  elements.blockedLabel.textContent = `Vòng ${currentRound + 1} khóa: ${blockedNames}.`;
 }
 
 function handleActionClick(event) {
   const actionTarget = event.target.closest("[data-action]");
   if (!actionTarget) return;
 
-  const { action, slotIndex } = actionTarget.dataset;
+  const { action, slotIndex, tier } = actionTarget.dataset;
 
   switch (action) {
     case "new-offer":
@@ -546,6 +744,12 @@ function handleActionClick(event) {
     case "close-host":
       elements.hostPanel.hidden = true;
       break;
+    case "select-next-tier":
+      saveNextTier(tier);
+      break;
+    case "host-new-game":
+      startHostNewGame();
+      break;
     case "reset-state":
       resetState();
       break;
@@ -560,7 +764,7 @@ function savePlayerName(name) {
   }
 
   state.playerName = name;
-  if (!state.offer.length && !state.hand.length) {
+  if (!serverState.connected && !state.offer.length && !state.hand.length) {
     createOffer(false);
   }
   playSound("start");
@@ -575,14 +779,31 @@ function editName() {
   elements.playerNameInput.focus();
 }
 
-function startNewOffer() {
+async function startNewOffer() {
+  if (serverState.connected) {
+    if (!serverState.isHost) {
+      playSound("error");
+      showToast("Chờ quản trò mở vòng mới.");
+      return;
+    }
+    try {
+      await apiPost("/api/host/open");
+      playSound("deal");
+      showToast(`Đã mở vòng ${serverState.round}.`);
+    } catch (error) {
+      playSound("error");
+      showToast("Không mở được vòng mới.");
+    }
+    return;
+  }
+
   createOffer(state.hand.length > 0 || state.offer.length > 0);
   playSound("deal");
   saveAndRender();
 }
 
 function createOffer(advanceRound) {
-  const availableCards = state.cards.filter((card) => card.remaining > 0);
+  const availableCards = state.cards.filter((card) => canDraftCard(card));
   if (!availableCards.length) {
     state.offer = [];
     playSound("error");
@@ -594,7 +815,9 @@ function createOffer(advanceRound) {
     state.round = clamp(state.round + 1, 1, 99);
   }
 
-  applyNextRatesForCurrentRound();
+  if (!serverState.connected) {
+    applyNextTierForCurrentRound();
+  }
   clearExpiredNextRoundBlock();
 
   let offer = [];
@@ -622,10 +845,10 @@ function drawOffer() {
   return offer;
 }
 
-function applyNextRatesForCurrentRound() {
-  if (!state.nextRates) return;
-  state.roundRateOverrides[String(state.round)] = state.nextRates;
-  state.nextRates = null;
+function applyNextTierForCurrentRound() {
+  if (!state.nextTier) return;
+  state.roundTierOverrides[String(state.round)] = state.nextTier;
+  state.nextTier = null;
 }
 
 function clearExpiredNextRoundBlock() {
@@ -698,6 +921,9 @@ function drawDifferentCardForSlot(index, currentCardId) {
 }
 
 function getBlockedCardIdsForCurrentRound() {
+  if (serverState.connected && serverState.round === state.round) {
+    return serverState.blockedCardIds || [];
+  }
   return state.nextRoundBlock?.round === state.round ? state.nextRoundBlock.cardIds : [];
 }
 
@@ -715,6 +941,9 @@ function getOfferSignature(offer) {
 
 function isOfferSignatureUsed(round, signature) {
   if (!signature) return false;
+  if (serverState.connected && serverState.round === round && serverState.offerSignatures.includes(signature)) {
+    return true;
+  }
   return state.offerHistory.some((item) => item.round === round && item.signature === signature);
 }
 
@@ -725,6 +954,13 @@ function recordOfferSignature(offer) {
   state.offerHistory = state.offerHistory
     .filter((item) => item.round >= state.round - 2)
     .slice(-120);
+  if (serverState.connected && serverState.phase === "open") {
+    fetch("/api/offer-signature", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ round: state.round, signature, playerId }),
+    }).catch(() => {});
+  }
 }
 
 function chooseSlot(index) {
@@ -744,7 +980,20 @@ function chooseSlot(index) {
     cardId: card.id,
     round: state.round,
   });
-  blockCardForNextRound(card.id);
+  if (serverState.connected) {
+    fetch("/api/select", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        playerId,
+        playerName: state.playerName,
+        round: state.round,
+        cardId: card.id,
+      }),
+    }).catch(() => {});
+  } else {
+    blockCardForNextRound(card.id);
+  }
   state.offer = [];
   playSound("select");
   saveAndRender();
@@ -769,11 +1018,7 @@ function drawOneCard(usedIds = new Set()) {
     })),
   );
 
-  let pool = state.cards.filter((card) => card.tier === tier && card.remaining > 0 && !usedIds.has(card.id));
-
-  if (!pool.length) {
-    pool = state.cards.filter((card) => card.remaining > 0 && !usedIds.has(card.id));
-  }
+  let pool = state.cards.filter((card) => card.tier === tier && canDraftCard(card) && !usedIds.has(card.id));
 
   if (!pool.length) return null;
 
@@ -783,10 +1028,37 @@ function drawOneCard(usedIds = new Set()) {
 function resetState() {
   const confirmed = window.confirm("Reset tên, thẻ đã chọn và vòng hiện tại?");
   if (!confirmed) return;
+  const currentGameId = state.gameId;
   state = createDefaultState();
+  state.gameId = currentGameId;
   playSound("reset");
   saveAndRender();
   showToast("Đã reset.");
+}
+
+async function startHostNewGame() {
+  if (!serverState.connected || !serverState.isHost) {
+    playSound("error");
+    showToast("Chỉ thiết bị quản trò được tạo ván mới.");
+    return;
+  }
+
+  const confirmed = window.confirm("Tạo ván mới cho toàn bộ bàn? Người chơi sẽ mất bộ thẻ hiện tại.");
+  if (!confirmed) return;
+
+  try {
+    const previousGameId = state.gameId;
+    await apiPost("/api/host/new-game");
+    if (state.gameId === previousGameId && serverState.gameId) {
+      resetLocalGame(serverState.gameId);
+    }
+    playSound("reset");
+    showToast("Đã tạo ván mới.");
+    render();
+  } catch (error) {
+    playSound("error");
+    showToast("Không tạo được ván mới.");
+  }
 }
 
 function toggleSound() {
@@ -805,35 +1077,31 @@ function toggleHostPanel() {
   }
 }
 
-function updateRatesTotal() {
-  const rates = readRateInputs();
-  const total = rates.silver + rates.gold + rates.diamond;
-  elements.ratesTotal.textContent = `Tổng ${total}%`;
-  elements.ratesTotal.classList.toggle("invalid", total !== 100);
-}
+async function saveNextTier(tier) {
+  const nextTier = normalizeTier(tier);
+  if (!nextTier) return;
 
-function saveNextRates() {
-  const rates = readRateInputs();
-  const total = rates.silver + rates.gold + rates.diamond;
-
-  if (total !== 100) {
-    playSound("error");
-    showToast("Tổng tỉ lệ phải đúng 100%.");
+  if (serverState.connected) {
+    if (!serverState.isHost) {
+      playSound("error");
+      showToast("Chỉ thiết bị quản trò được chọn loại thẻ.");
+      return;
+    }
+    try {
+      await apiPost("/api/host/tier", { tier: nextTier });
+      playSound("select");
+      showToast(`Vòng ${serverState.round + 1} sẽ là ${tierInfo[nextTier].label}.`);
+    } catch (error) {
+      playSound("error");
+      showToast("Không lưu được loại thẻ.");
+    }
     return;
   }
 
-  state.nextRates = rates;
+  state.nextTier = nextTier;
   playSound("select");
   saveAndRender();
-  showToast(`Đã lưu tỉ lệ cho vòng ${state.round + 1}.`);
-}
-
-function readRateInputs() {
-  return {
-    silver: clamp(Math.floor(Number(elements.rateSilverInput.value) || 0), 0, 100),
-    gold: clamp(Math.floor(Number(elements.rateGoldInput.value) || 0), 0, 100),
-    diamond: clamp(Math.floor(Number(elements.rateDiamondInput.value) || 0), 0, 100),
-  };
+  showToast(`Vòng ${state.round + 1} sẽ là ${tierInfo[nextTier].label}.`);
 }
 
 function saveAndRender() {
@@ -842,36 +1110,27 @@ function saveAndRender() {
 }
 
 function getRoundRates(round) {
-  return state.roundRateOverrides?.[String(round)] || getPresetRoundRates(round);
+  if (serverState.connected && serverState.round === round) {
+    return tierRates[serverState.currentTier] || tierRates.silver;
+  }
+  return tierRates[getRoundTier(round)] || tierRates.silver;
 }
 
-function getPresetRoundRates(round) {
-  return roundRates[Math.min(round, roundRates.length) - 1] || roundRates[roundRates.length - 1];
+function getRoundTier(round) {
+  return state.roundTierOverrides?.[String(round)] || getPresetRoundTier(round);
+}
+
+function getPresetRoundTier(round) {
+  return defaultRoundTiers[Math.min(round, defaultRoundTiers.length) - 1] || defaultRoundTiers[defaultRoundTiers.length - 1];
 }
 
 function getEffectiveTierRates() {
   const rawRates = getRoundRates(state.round);
-  const availableTiers = tierOrder.filter((tier) => getTierAvailableRemaining(tier) > 0);
-  if (!availableTiers.length) {
-    return { silver: 0, gold: 0, diamond: 0 };
-  }
-
-  const rawAvailableTotal = availableTiers.reduce((sum, tier) => sum + rawRates[tier], 0);
-  if (rawAvailableTotal > 0) {
-    return Object.fromEntries(
-      tierOrder.map((tier) => [
-        tier,
-        availableTiers.includes(tier) ? rawRates[tier] / rawAvailableTotal : 0,
-      ]),
-    );
-  }
-
-  const evenRate = 1 / availableTiers.length;
-  return Object.fromEntries(tierOrder.map((tier) => [tier, availableTiers.includes(tier) ? evenRate : 0]));
+  return Object.fromEntries(tierOrder.map((tier) => [tier, (rawRates[tier] || 0) / 100]));
 }
 
 function getSlotChanceForCard(card) {
-  if (!card || card.remaining <= 0) return 0;
+  if (!canDraftCard(card)) return 0;
   const tierTotal = getTierRemaining(card.tier).remaining;
   if (!tierTotal) return 0;
   const effectiveRates = getEffectiveTierRates();
@@ -880,7 +1139,7 @@ function getSlotChanceForCard(card) {
 
 function getTierRemaining(tier) {
   return state.cards
-    .filter((card) => card.tier === tier)
+    .filter((card) => card.tier === tier && card.minRound <= state.round)
     .reduce(
       (totals, card) => ({
         remaining: totals.remaining + card.remaining,
@@ -893,8 +1152,12 @@ function getTierRemaining(tier) {
 function getTierAvailableRemaining(tier) {
   const blockedIds = new Set(getBlockedCardIdsForCurrentRound());
   return state.cards
-    .filter((card) => card.tier === tier && !blockedIds.has(card.id))
+    .filter((card) => card.tier === tier && canDraftCard(card) && !blockedIds.has(card.id))
     .reduce((sum, card) => sum + card.remaining, 0);
+}
+
+function canDraftCard(card) {
+  return Boolean(card && card.remaining > 0 && (card.minRound || 1) <= state.round);
 }
 
 function getCard(cardId) {
@@ -923,6 +1186,20 @@ function groupHand() {
 
 function createId(prefix) {
   return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function getOrCreatePlayerId() {
+  const key = "poker-tactics-player-id";
+  let id = localStorage.getItem(key);
+  if (!id) {
+    id = createId("player");
+    localStorage.setItem(key, id);
+  }
+  return id;
+}
+
+function hasSelectedRound(round) {
+  return state.hand.some((pick) => Number(pick.round) === Number(round));
 }
 
 function pickWeighted(items) {

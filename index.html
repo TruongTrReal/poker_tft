@@ -80,40 +80,39 @@
             <div class="section-heading">
               <div>
                 <span class="eyebrow">Quản trò</span>
-                <h2>Tỉ lệ vòng kế tiếp</h2>
+                <h2>Loại thẻ vòng kế tiếp</h2>
               </div>
               <button class="icon-button" type="button" data-action="close-host" aria-label="Đóng quản trò">
                 <i data-lucide="x"></i>
               </button>
             </div>
-            <form id="hostForm" class="host-form">
-              <label>
+            <div class="host-tier-picker" aria-label="Chọn loại thẻ vòng kế tiếp">
+              <button class="tier-pick silver" type="button" data-action="select-next-tier" data-tier="silver">
+                <i data-lucide="circle"></i>
                 <span>Bạc</span>
-                <input id="rateSilverInput" type="number" min="0" max="100" step="1" inputmode="numeric" />
-              </label>
-              <label>
+              </button>
+              <button class="tier-pick gold" type="button" data-action="select-next-tier" data-tier="gold">
+                <i data-lucide="circle-dot"></i>
                 <span>Vàng</span>
-                <input id="rateGoldInput" type="number" min="0" max="100" step="1" inputmode="numeric" />
-              </label>
-              <label>
+              </button>
+              <button class="tier-pick diamond" type="button" data-action="select-next-tier" data-tier="diamond">
+                <i data-lucide="gem"></i>
                 <span>Kim cương</span>
-                <input id="rateDiamondInput" type="number" min="0" max="100" step="1" inputmode="numeric" />
-              </label>
-              <div class="host-submit">
-                <span id="ratesTotal">Tổng 100%</span>
-                <button class="primary-button" type="submit">
-                  <i data-lucide="save"></i>
-                  <span>Lưu cho vòng sau</span>
-                </button>
-              </div>
-            </form>
+              </button>
+            </div>
             <div class="host-rules">
-              <span id="nextRatesLabel">Vòng sau dùng preset mặc định.</span>
+              <span id="nextTierLabel">Vòng sau dùng loại mặc định.</span>
               <span id="blockedLabel">Không có thẻ bị khóa ở vòng kế tiếp.</span>
+            </div>
+            <div class="host-game-actions">
+              <button class="ghost-button danger" type="button" data-action="host-new-game">
+                <i data-lucide="rotate-ccw"></i>
+                <span>Ván mới</span>
+              </button>
             </div>
           </section>
 
-          <section class="choice-section">
+          <section class="choice-section" id="choiceSection">
             <div class="section-heading">
               <div>
                 <span class="eyebrow">Lựa chọn</span>
@@ -124,7 +123,7 @@
             <section class="draft-board" id="draftBoard" aria-label="Lựa chọn vòng hiện tại"></section>
           </section>
 
-          <section class="hand-panel panel">
+          <section class="hand-panel panel" id="handPanel">
             <div class="section-heading">
               <div>
                 <span class="eyebrow">Bộ của bạn</span>
