@@ -51,6 +51,20 @@ The full multiplayer version needs a small shared server, so use `server.py` for
 3. Publish directory: `.`.
 4. Deploy.
 
+### Render
+
+Create a Web Service from this repository.
+
+- Runtime: `Python`
+- Build Command: `pip install -r requirements.txt`
+- Start Command: `python3 server.py`
+- Environment Variable: set `HOST_TOKEN` to a private host password, for example `my-secret-host-token`
+
+After deploy:
+
+- Player URL: `https://your-render-app.onrender.com/`
+- Host URL: `https://your-render-app.onrender.com/?host=my-secret-host-token`
+
 ### GitHub Pages
 
 1. Push this folder to a GitHub repository.

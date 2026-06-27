@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: poker-tft
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python3 server.py
+    envVars:
+      - key: HOST_TOKEN
+        sync: false
