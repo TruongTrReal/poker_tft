@@ -169,7 +169,7 @@ const defaultCards = [
   upgrade("cheat-forged-interest", "cheat", "Lãi Giả", "Economy", "Đến hết trận, bắt đầu mỗi vòng nhận 10đ, không còn nhận lợi tức."),
   upgrade("cheat-blackmail", "cheat", "Hợp Đồng Im Lặng", "Thông tin", "Đến hết trận, đầu mỗi vòng chọn 1 người ký khế ước. Nếu họ fold trước showdown, bạn nhận +8đ; nếu họ showdown và thua bạn, họ mất thêm 12đ."),
   upgrade("cheat-royal-immunity", "cheat", "Thế Thân Hoàng Gia", "Phòng thủ", "Đến hết trận, đầu mỗi vòng chọn 1 thế thân. Lần đầu bạn thua pot, thế thân trả thay 1/2 số tiền bạn mất; nếu thế thân thắng bạn trong vòng đó, họ lấy lại gấp đôi."),
-  upgrade("cheat-bank-heist", "cheat", "Ăn Cắp Công Nghệ", "Draft", "Nhận ngay 1 lõi Vàng bất kỳ và 1 lõi Kim cương bất kỳ."),
+  upgrade("cheat-bank-heist", "cheat", "Ăn Cắp Công Nghệ", "Draft", "Nhận ngay 2 lõi Kim cương bất kỳ."),
   upgrade("cheat-scripted-river", "cheat", "Song Kiếm Tai Ương", "Bài", "Bài của bạn luôn là bài đôi, lấy theo lá cao hơn của hand. Không được raise."),
   upgrade("cheat-infinite-reraise", "cheat", "Raise Vô Hạn", "Bet", "Khi bạn raise thì người khác buộc phải theo, không được fold."),
   upgrade("cheat-contract-killer", "cheat", "Hợp Đồng Sát Thủ", "Bounty", "Đến hết trận, đầu mỗi vòng chọn 1 mục tiêu. Nếu họ mất ít nhất 5đ vì bạn, nhận thêm +8đ."),
