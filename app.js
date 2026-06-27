@@ -1,6 +1,6 @@
 const STORAGE_KEY = "poker-tactics-player-v1";
 const CARD_LIBRARY_VERSION = 4;
-const CHEAT_ROLL_CHANCE = 0.1;
+const CHEAT_ROLL_CHANCE = 0.05;
 
 const draftTierOrder = ["silver", "gold", "diamond"];
 const tierOrder = ["silver", "gold", "diamond", "cheat"];
@@ -157,7 +157,7 @@ const defaultCards = [
   upgrade("cheat-time-walk", "cheat", "Đi Ngược Thời Gian", "Bài", "Đến hết trận, mỗi vòng 1 lần, sau khi đổi bài bất lợi cho bạn, được đổi thêm lần nữa."),
   upgrade("cheat-mirror-match", "cheat", "Gương Đỏ", "Copy", "Đến hết trận, mỗi vòng 1 lần, sao chép 1 hiệu ứng người mà khác sử dụng."),
   upgrade("cheat-finisher", "cheat", "Đòn Kết Liễu Đỏ", "Snowball", "Nếu thắng một người khiến họ về 0đ, nhận thêm +10đ và +3đ lợi tức."),
-  upgrade("cheat-phoenix-debt", "cheat", "Nợ Phượng Hoàng Đỏ", "Comeback", "Lần đầu về 0đ, hồi sinh với 30đ.",
+  upgrade("cheat-phoenix-debt", "cheat", "Nợ Phượng Hoàng Đỏ", "Comeback", "Lần đầu về 0đ, hồi sinh với 30đ."),
   upgrade("cheat-house-edge", "cheat", "Nhà Cái Đứng Sau", "Snowball", "Nhận ngay 100đ, không được nhận lợi tức hay thu nhập nữa."),
   upgrade("cheat-rigged-deck", "cheat", "Bộ Bài Đã Xếp", "Bài", "Đến hết trận, mỗi vòng 1 lần sau khi xem bài, được bốc lại toàn bộ hand; nếu hand mới thắng, nhận thêm +3đ."),
   upgrade("cheat-insider-trading", "cheat", "Giao Dịch Nội Gián", "Thông tin", "Đến hết trận, mỗi vòng 1 lần trước showdown, xem bài của 1 người rồi được quyền fold và hoàn lại 50% số đã bet."),
