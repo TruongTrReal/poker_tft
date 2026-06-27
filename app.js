@@ -37,9 +37,9 @@ const tierInfo = {
 };
 
 const tierRates = {
-  silver: { silver: 90, gold: 0, diamond: 0, cheat: 10 },
-  gold: { silver: 0, gold: 90, diamond: 0, cheat: 10 },
-  diamond: { silver: 0, gold: 0, diamond: 90, cheat: 10 },
+  silver: { silver: 100, gold: 0, diamond: 0, cheat: 0 },
+  gold: { silver: 0, gold: 100, diamond: 0, cheat: 0 },
+  diamond: { silver: 0, gold: 0, diamond: 100, cheat: 0 },
 };
 
 const defaultRoundTiers = ["silver", "silver", "gold", "gold", "diamond"];
